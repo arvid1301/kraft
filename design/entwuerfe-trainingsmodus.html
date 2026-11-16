@@ -1,0 +1,492 @@
+<title>Trainingsmodus Entwürfe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: on desktop two phone frames side by side, on a phone one design fills the screen with a small switch. */
+:root {
+  --page-bg: #0a0a0c;
+  --page-fg: #e9e9ee;
+  --page-muted: #8a8a96;
+  --frame: #1c1c22;
+  /* Richtung A: Kompakt, warmes Schwarz, Orange */
+  --a-bg: #0c0c0f;
+  --a-card: #17171c;
+  --a-card2: #202027;
+  --a-fg: #f3f3f6;
+  --a-muted: #8e8e9a;
+  --a-line: #2a2a33;
+  --a-accent: #ff6b1a;
+  --a-accent-fg: #130800;
+  --a-good: #3ad17a;
+  /* Richtung B: Fokus, kühles Blauschwarz, Mint */
+  --b-bg: #0b1016;
+  --b-card: #131a23;
+  --b-card2: #1a2330;
+  --b-fg: #eef3f8;
+  --b-muted: #7f8ea0;
+  --b-line: #24303e;
+  --b-accent: #3ddc97;
+  --b-accent-fg: #04160d;
+  --b-warn: #ffb547;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Inter, Segoe UI, Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--page-bg); color: var(--page-fg); font-family: var(--font);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; cursor: pointer; border: 0; }
+button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.intro { max-width: 900px; margin: 0 auto; padding: 28px 0 8px; }
+.intro h1 { font-size: 22px; margin: 0 0 6px; font-weight: 700; letter-spacing: -0.01em; }
+.intro p { margin: 0; color: var(--page-muted); font-size: 14px; line-height: 1.5; max-width: 62ch; }
+
+.stage { display: flex; gap: 40px; justify-content: center; align-items: flex-start; flex-wrap: wrap; padding: 24px 0 48px; }
+.proto { width: 390px; max-width: 100%; }
+.proto h2 { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+.proto .sub { font-size: 13px; color: var(--page-muted); margin: 0 0 14px; }
+.phone {
+  width: 390px; max-width: 100%; height: 844px; border-radius: 48px; background: var(--frame);
+  padding: 10px; box-shadow: 0 30px 80px rgba(0,0,0,.6), inset 0 0 0 1px #2a2a32;
+}
+.screen { width: 100%; height: 100%; border-radius: 40px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+.switch { display: none; }
+
+/* phone view: one design full screen */
+@media (max-width: 860px) {
+  body { padding-left: 0; padding-right: 0; }
+  .intro { display: none; }
+  .stage { padding: 0; gap: 0; height: 100%; }
+  .proto { width: 100%; height: 100%; }
+  .proto h2, .proto .sub { display: none; }
+  .phone { width: 100%; height: 100%; border-radius: 0; padding: 0; box-shadow: none; background: transparent; }
+  .screen { border-radius: 0; }
+  .proto[data-hidden="1"] { display: none; }
+  .switch {
+    display: flex; position: fixed; z-index: 50; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; transform: translateX(-50%);
+    background: rgba(40,40,48,.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 999px; padding: 3px; gap: 2px;
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  }
+  .switch button { background: transparent; color: #ddd; font-size: 13px; font-weight: 600; padding: 7px 14px; border-radius: 999px; min-height: 32px; }
+  .switch button[aria-pressed="true"] { background: #fff; color: #111; }
+  .screen { padding-top: calc(env(safe-area-inset-top, 0px) + 44px); }
+  .screen .bottom { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); }
+}
+
+/* ===================== Richtung A: Kompakt ===================== */
+.A { background: var(--a-bg); color: var(--a-fg); }
+.A .top { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 8px; gap: 10px; }
+.A .top .crumb { font-size: 13px; color: var(--a-muted); font-weight: 500; }
+.A .top .crumb b { color: var(--a-fg); font-weight: 600; }
+.A .timerpill {
+  display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px 0 10px; border-radius: 999px;
+  background: var(--a-card2); color: var(--a-muted); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.A .timerpill.on { background: var(--a-accent); color: var(--a-accent-fg); }
+.A .timerpill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: .6; }
+.A .close { width: 36px; height: 36px; border-radius: 50%; background: var(--a-card2); color: var(--a-fg); font-size: 18px; display: grid; place-items: center; }
+.A .body { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.A .ex { background: var(--a-card); border-radius: 22px; padding: 16px 18px; }
+.A .ex .name { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.A .ex .meta { display: flex; gap: 8px; align-items: center; margin-top: 6px; font-size: 13px; color: var(--a-muted); flex-wrap: wrap; }
+.A .tag { background: var(--a-card2); border-radius: 999px; padding: 3px 9px; font-weight: 600; font-size: 12px; }
+.A .last { margin-top: 12px; font-size: 14px; color: var(--a-muted); }
+.A .last b { color: var(--a-fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.A .hint { margin-top: 10px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255,107,26,.14); color: var(--a-accent); border-radius: 12px; padding: 8px 12px; font-size: 14px; font-weight: 600; }
+.A .sets { background: var(--a-card); border-radius: 22px; overflow: hidden; }
+.A .row {
+  display: grid; grid-template-columns: 44px 1fr 1fr 56px; align-items: center; min-height: 58px; padding: 0 8px 0 10px;
+  border-top: 1px solid var(--a-line); font-variant-numeric: tabular-nums; background: transparent; width: 100%; text-align: left; color: inherit;
+  transition: background .18s;
+}
+.A .row:first-child { border-top: 0; }
+.A .row.head { min-height: 34px; font-size: 11px; color: var(--a-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.A .row .n { font-weight: 700; font-size: 15px; color: var(--a-muted); display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 10px; background: var(--a-card2); }
+.A .row.warm .n { background: transparent; font-size: 12px; }
+.A .row.warm { color: var(--a-muted); }
+.A .row.active { background: var(--a-card2); }
+.A .row.active .n { background: var(--a-accent); color: var(--a-accent-fg); }
+.A .row .v { font-size: 22px; font-weight: 700; }
+.A .row .v small { font-size: 13px; color: var(--a-muted); font-weight: 500; margin-left: 3px; }
+.A .row .chk { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--a-line); display: grid; place-items: center; justify-self: end; margin-right: 6px; color: transparent; transition: transform .2s, background .2s, border-color .2s; }
+.A .row.done .chk { background: var(--a-good); border-color: var(--a-good); color: #04240f; }
+.A .row.done .v { color: var(--a-muted); }
+.A .row.pop .chk { animation: popA .32s cubic-bezier(.3,1.6,.4,1); }
+@keyframes popA { 0% { transform: scale(.6); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.A .next { display: flex; justify-content: space-between; align-items: center; color: var(--a-muted); font-size: 13px; padding: 2px 6px; }
+.A .next b { color: var(--a-fg); font-weight: 600; }
+.A .bottom { background: var(--a-card); border-top: 1px solid var(--a-line); padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.A .rest { display: none; align-items: center; gap: 10px; background: var(--a-card2); border-radius: 16px; padding: 10px 12px; }
+.A .rest.on { display: flex; }
+.A .rest .t { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 68px; letter-spacing: -0.02em; }
+.A .rest .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--a-line); overflow: hidden; }
+.A .rest .bar i { display: block; height: 100%; background: var(--a-accent); width: 100%; transition: width 1s linear; }
+.A .rest button { background: var(--a-card); color: var(--a-fg); border-radius: 999px; min-height: 36px; padding: 0 12px; font-weight: 600; font-size: 13px; }
+.A .steppers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.A .stepper { background: var(--a-card2); border-radius: 18px; padding: 8px; display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; }
+.A .stepper .lbl { grid-column: 1 / -1; text-align: center; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--a-muted); font-weight: 600; margin-bottom: 2px; }
+.A .stepper .val { text-align: center; font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.A .stepper .val small { font-size: 14px; color: var(--a-muted); font-weight: 600; }
+.A .stepper button { height: 56px; border-radius: 14px; background: var(--a-card); color: var(--a-fg); font-size: 28px; font-weight: 500; }
+.A .stepper button:active { background: var(--a-line); }
+.A .log { min-height: 60px; border-radius: 18px; background: var(--a-accent); color: var(--a-accent-fg); font-size: 18px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; transition: transform .12s; }
+.A .log:active { transform: scale(.98); }
+.A .log.undo { background: var(--a-card2); color: var(--a-fg); }
+.A .toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: 230px; background: #2b2b33; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; box-shadow: 0 6px 24px rgba(0,0,0,.5); white-space: nowrap; }
+.A .toast.show { opacity: 1; transform: translate(-50%, -8px); }
+.A .flash { position: absolute; inset: 0; background: var(--a-accent); opacity: 0; pointer-events: none; }
+.A .flash.go { animation: flashA 1.6s ease-out; }
+@keyframes flashA { 0%, 30%, 60% { opacity: .85; } 15%, 45%, 100% { opacity: 0; } }
+
+/* ===================== Richtung B: Fokus ===================== */
+.B { background: var(--b-bg); color: var(--b-fg); }
+.B .top { padding: 14px 18px 0; display: flex; flex-direction: column; gap: 10px; }
+.B .prog { display: flex; gap: 4px; }
+.B .prog i { flex: 1; height: 4px; border-radius: 2px; background: var(--b-line); }
+.B .prog i.d { background: var(--b-accent); }
+.B .prog i.c { background: var(--b-fg); }
+.B .hdr { display: flex; justify-content: space-between; align-items: center; }
+.B .hdr .crumb { font-size: 13px; color: var(--b-muted); font-weight: 500; }
+.B .hdr .ib { width: 36px; height: 36px; border-radius: 50%; background: var(--b-card); color: var(--b-fg); display: grid; place-items: center; font-size: 18px; }
+.B .body { flex: 1; overflow-y: auto; padding: 8px 18px 12px; display: flex; flex-direction: column; gap: 14px; }
+.B .name { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; margin: 0; line-height: 1.1; }
+.B .sub { color: var(--b-muted); font-size: 14px; margin-top: 4px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.B .sub .tip { color: var(--b-accent); font-weight: 600; }
+.B .dots { display: flex; gap: 6px; align-items: center; }
+.B .dots span { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--b-card); color: var(--b-muted); font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; border: 2px solid transparent; transition: transform .2s; }
+.B .dots span.w { width: 28px; height: 28px; font-size: 11px; }
+.B .dots span.cur { border-color: var(--b-fg); color: var(--b-fg); }
+.B .dots span.d { background: var(--b-accent); color: var(--b-accent-fg); }
+.B .dots span.pop { animation: popB .35s cubic-bezier(.3,1.6,.4,1); }
+@keyframes popB { 0% { transform: scale(.5); } 60% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.B .dots .lbl { margin-left: auto; font-size: 13px; color: var(--b-muted); white-space: nowrap; }
+.B .big { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.B .tile { background: var(--b-card); border-radius: 26px; padding: 18px 10px 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.B .tile .lbl { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--b-muted); font-weight: 700; }
+.B .tile .val { font-size: 58px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.B .tile .val small { font-size: 16px; color: var(--b-muted); font-weight: 600; letter-spacing: 0; margin-left: 2px; }
+.B .tile .last { font-size: 13px; color: var(--b-muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.B .tile .pm { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%; margin-top: 8px; }
+.B .tile .pm button { height: 64px; border-radius: 18px; background: var(--b-card2); color: var(--b-fg); font-size: 32px; font-weight: 400; }
+.B .tile .pm button:active { background: var(--b-line); }
+.B .nextcard { background: var(--b-card); border-radius: 18px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; color: var(--b-muted); font-size: 13px; }
+.B .nextcard b { color: var(--b-fg); font-weight: 600; display: block; font-size: 15px; }
+.B .bottom { padding: 8px 18px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.B .go { width: 100%; min-height: 72px; border-radius: 24px; background: var(--b-accent); color: var(--b-accent-fg); font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px; transition: transform .12s; letter-spacing: -0.01em; }
+.B .go:active { transform: scale(.97); }
+.B .undo { background: transparent; color: var(--b-muted); font-size: 14px; font-weight: 600; min-height: 36px; padding: 0 12px; }
+.B .overlay { position: absolute; inset: 0; background: var(--b-bg); display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; z-index: 5; }
+.B .overlay.on { display: flex; animation: riseB .28s ease-out; }
+@keyframes riseB { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.B .ring { position: relative; width: 240px; height: 240px; }
+.B .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.B .ring .tr { fill: none; stroke: var(--b-line); stroke-width: 12; }
+.B .ring .pr { fill: none; stroke: var(--b-accent); stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.B .ring .num { position: absolute; inset: 0; display: grid; place-items: center; font-size: 60px; font-weight: 800; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.B .overlay .lbl { font-size: 15px; color: var(--b-muted); text-align: center; }
+.B .overlay .lbl b { color: var(--b-fg); font-weight: 700; display: block; font-size: 20px; margin-bottom: 4px; }
+.B .overlay .acts { display: flex; gap: 10px; width: 100%; max-width: 320px; }
+.B .overlay .acts button { flex: 1; min-height: 54px; border-radius: 16px; background: var(--b-card); color: var(--b-fg); font-size: 16px; font-weight: 700; }
+.B .overlay .acts button.skip { background: var(--b-card2); }
+.B .flash { position: absolute; inset: 0; background: var(--b-accent); opacity: 0; pointer-events: none; z-index: 6; }
+.B .flash.go { animation: flashB 1.6s ease-out; }
+@keyframes flashB { 0%, 30%, 60% { opacity: .9; } 15%, 45%, 100% { opacity: 0; } }
+.B .toast { position: absolute; left: 50%; transform: translateX(-50%); bottom: 150px; background: #223040; color: #fff; padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s; white-space: nowrap; z-index: 7; }
+.B .toast.show { opacity: 1; transform: translate(-50%, -8px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+
+<div class="intro">
+  <h1>Trainingsmodus: zwei Richtungen</h1>
+  <p>Beide Entwürfe sind klickbar: Plus und Minus ändern Gewicht und Wiederholungen, der große Button hakt den Satz ab, danach läuft die Pause (hier zur Demo auf 15 Sekunden verkürzt). Öffne die Seite auf dem iPhone, dann füllt ein Entwurf den ganzen Bildschirm und du schaltest oben um.</p>
+</div>
+
+<div class="switch" role="group" aria-label="Entwurf wählen">
+  <button id="swA" aria-pressed="true" type="button">Richtung A</button>
+  <button id="swB" aria-pressed="false" type="button">Richtung B</button>
+</div>
+
+<div class="stage">
+
+  <!-- ============ A ============ -->
+  <section class="proto" id="protoA">
+    <h2>Richtung A: Kompakt</h2>
+    <p class="sub">Alle Sätze einer Übung als Liste im Blick, Steuerung fest unten. Orange als Akzent.</p>
+    <div class="phone"><div class="screen A">
+      <div class="top">
+        <div class="crumb"><b>Tag A</b> · Übung 1 von 9</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="timerpill" id="aPill"><span class="dot"></span><span id="aPillT">Pause</span></div>
+          <button class="close" aria-label="Training beenden" type="button">×</button>
+        </div>
+      </div>
+      <div class="body">
+        <div class="ex">
+          <h3 class="name">Beinpresse</h3>
+          <div class="meta"><span class="tag">Beine</span><span>3 Sätze · 8 bis 12 Wdh · Pause 2:30</span></div>
+          <div class="last">Letztes Mal <b>120 kg</b> × <b>12 · 12 · 12</b></div>
+          <div class="hint">↑ Heute 125 kg versuchen</div>
+        </div>
+        <div class="sets" id="aSets"></div>
+        <div class="next"><span>Als Nächstes</span><b>Brustpresse · 3 × 8 bis 10</b></div>
+      </div>
+      <div class="bottom">
+        <div class="rest" id="aRest">
+          <div class="t" id="aRestT">1:30</div>
+          <div class="bar"><i id="aRestBar"></i></div>
+          <button type="button" id="aRestPlus">+30 s</button>
+          <button type="button" id="aRestSkip">Weiter</button>
+        </div>
+        <div class="steppers">
+          <div class="stepper">
+            <div class="lbl">Gewicht</div>
+            <button type="button" id="aWm" aria-label="Gewicht minus">−</button>
+            <div class="val"><span id="aW">125</span><small> kg</small></div>
+            <button type="button" id="aWp" aria-label="Gewicht plus">+</button>
+          </div>
+          <div class="stepper">
+            <div class="lbl">Wdh</div>
+            <button type="button" id="aRm" aria-label="Wiederholungen minus">−</button>
+            <div class="val"><span id="aR">10</span></div>
+            <button type="button" id="aRp" aria-label="Wiederholungen plus">+</button>
+          </div>
+        </div>
+        <button class="log" id="aLog" type="button">Satz abhaken ✓</button>
+      </div>
+      <div class="toast" id="aToast">Satz 1 gespeichert</div>
+      <div class="flash" id="aFlash"></div>
+    </div></div>
+  </section>
+
+  <!-- ============ B ============ -->
+  <section class="proto" id="protoB" data-hidden="1">
+    <h2>Richtung B: Fokus</h2>
+    <p class="sub">Ein Satz pro Bildschirm, riesige Zahlen, Pause als Vollbild-Ring. Mint als Akzent.</p>
+    <div class="phone"><div class="screen B">
+      <div class="top">
+        <div class="prog" id="bProg"></div>
+        <div class="hdr">
+          <div class="crumb">Tag A · Übung 1 von 9 · 00:04</div>
+          <button class="ib" aria-label="Übungen umsortieren" type="button">☰</button>
+        </div>
+      </div>
+      <div class="body">
+        <div>
+          <h3 class="name">Beinpresse</h3>
+          <div class="sub"><span>Beine · 8 bis 12 Wdh</span><span class="tip">↑ Heute 125 kg</span></div>
+        </div>
+        <div class="dots" id="bDots"></div>
+        <div class="big">
+          <div class="tile">
+            <div class="lbl">Gewicht</div>
+            <div class="val"><span id="bW">125</span><small>kg</small></div>
+            <div class="last">zuletzt 120</div>
+            <div class="pm"><button type="button" id="bWm" aria-label="Gewicht minus">−</button><button type="button" id="bWp" aria-label="Gewicht plus">+</button></div>
+          </div>
+          <div class="tile">
+            <div class="lbl">Wdh</div>
+            <div class="val"><span id="bR">10</span></div>
+            <div class="last">zuletzt 12</div>
+            <div class="pm"><button type="button" id="bRm" aria-label="Wiederholungen minus">−</button><button type="button" id="bRp" aria-label="Wiederholungen plus">+</button></div>
+          </div>
+        </div>
+        <div class="nextcard"><span>Danach<b>Brustpresse</b></span><span>3 × 8 bis 10</span></div>
+      </div>
+      <div class="bottom">
+        <button class="go" id="bGo" type="button"><span id="bGoT">Satz 1 abhaken</span></button>
+        <button class="undo" id="bUndo" type="button" hidden>Letzten Satz rückgängig</button>
+      </div>
+      <div class="overlay" id="bOv">
+        <div class="ring">
+          <svg viewBox="0 0 240 240" aria-hidden="true">
+            <circle class="tr" cx="120" cy="120" r="108"></circle>
+            <circle class="pr" id="bRing" cx="120" cy="120" r="108" stroke-dasharray="678.6" stroke-dashoffset="0"></circle>
+          </svg>
+          <div class="num" id="bOvT">1:30</div>
+        </div>
+        <div class="lbl"><b>Pause</b><span id="bOvNext">Dann Satz 2 · Beinpresse</span></div>
+        <div class="acts">
+          <button type="button" id="bOvPlus">+30 s</button>
+          <button type="button" class="skip" id="bOvSkip">Weiter</button>
+        </div>
+      </div>
+      <div class="flash" id="bFlash"></div>
+      <div class="toast" id="bToast">Satz gespeichert</div>
+    </div></div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  var DEMO_REST = 15;          // Sekunden, nur für die Demo (im echten Training 150)
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Schalter (nur auf dem Handy sichtbar)
+  var pA = document.getElementById('protoA'), pB = document.getElementById('protoB');
+  var swA = document.getElementById('swA'), swB = document.getElementById('swB');
+  function pick(which) {
+    pA.dataset.hidden = which === 'A' ? '' : '1';
+    pB.dataset.hidden = which === 'B' ? '' : '1';
+    swA.setAttribute('aria-pressed', which === 'A');
+    swB.setAttribute('aria-pressed', which === 'B');
+    try { localStorage.setItem('entwurf', which); } catch (e) {}
+  }
+  swA.onclick = function () { pick('A'); };
+  swB.onclick = function () { pick('B'); };
+  try { pick(localStorage.getItem('entwurf') === 'B' ? 'B' : 'A'); } catch (e) { pick('A'); }
+  function syncHidden() {
+    // Auf dem Desktop beide zeigen
+    if (window.innerWidth > 860) { pA.dataset.hidden = ''; pB.dataset.hidden = ''; }
+    else { pick(swB.getAttribute('aria-pressed') === 'true' ? 'B' : 'A'); }
+  }
+  window.addEventListener('resize', syncHidden); syncHidden();
+
+  function fmt(s) { var m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; }
+  function beep() {
+    try {
+      var C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+      var ctx = beep.ctx || (beep.ctx = new C());
+      [0, 0.25, 0.5].forEach(function (t) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.4, ctx.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.2);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.22);
+      });
+    } catch (e) {}
+  }
+  function flash(el) { el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); }
+  function toast(el, text) { el.textContent = text; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(function () { el.classList.remove('show'); }, 1800); }
+
+  /* ---------- A ---------- */
+  (function () {
+    var sets = [
+      { warm: true, w: 60, r: 8, done: false, label: 'W1' },
+      { warm: true, w: 85, r: 5, done: false, label: 'W2' },
+      { w: 125, r: 10, done: false, label: '1' },
+      { w: 125, r: 10, done: false, label: '2' },
+      { w: 125, r: 10, done: false, label: '3' }
+    ];
+    var active = 2, timer = null, left = 0, total = 0;
+    var $ = function (id) { return document.getElementById(id); };
+    var list = $('aSets'), W = $('aW'), R = $('aR'), log = $('aLog'), rest = $('aRest'), pill = $('aPill'), pillT = $('aPillT');
+
+    function render(popIdx) {
+      var html = '<div class="row head"><span></span><span>Gewicht</span><span>Wdh</span><span></span></div>';
+      sets.forEach(function (s, i) {
+        html += '<button type="button" class="row' + (s.warm ? ' warm' : '') + (i === active ? ' active' : '') + (s.done ? ' done' : '') + (i === popIdx ? ' pop' : '') + '" data-i="' + i + '">' +
+          '<span class="n">' + s.label + '</span>' +
+          '<span class="v">' + s.w + '<small>kg</small></span>' +
+          '<span class="v">' + s.r + '</span>' +
+          '<span class="chk">✓</span></button>';
+      });
+      list.innerHTML = html;
+      W.textContent = sets[active].w; R.textContent = sets[active].r;
+      log.textContent = sets[active].done ? 'Rückgängig' : (sets[active].warm ? 'Aufwärmsatz abhaken ✓' : 'Satz abhaken ✓');
+      log.classList.toggle('undo', sets[active].done);
+    }
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest('.row[data-i]'); if (!b) return;
+      active = +b.dataset.i; render();
+    });
+    $('aWm').onclick = function () { sets[active].w = Math.max(0, sets[active].w - 2.5); render(); };
+    $('aWp').onclick = function () { sets[active].w += 2.5; render(); };
+    $('aRm').onclick = function () { sets[active].r = Math.max(0, sets[active].r - 1); render(); };
+    $('aRp').onclick = function () { sets[active].r += 1; render(); };
+    log.onclick = function () {
+      var s = sets[active];
+      if (s.done) { s.done = false; stopRest(); render(); toast($('aToast'), 'Satz zurückgenommen'); return; }
+      s.done = true;
+      var idx = active;
+      toast($('aToast'), (s.warm ? 'Aufwärmsatz ' : 'Satz ') + s.label + ' gespeichert');
+      var next = sets.findIndex(function (x, i) { return i > idx && !x.done; });
+      if (next >= 0) { active = next; }
+      render(idx);
+      if (!s.warm) startRest(DEMO_REST); else startRest(Math.round(DEMO_REST / 2));
+    };
+    function startRest(sec) {
+      stopRest(); left = sec; total = sec; rest.classList.add('on'); pill.classList.add('on'); tick();
+      timer = setInterval(function () { left--; tick(); if (left <= 0) { endRest(); } }, 1000);
+    }
+    function tick() {
+      $('aRestT').textContent = fmt(Math.max(0, left)); pillT.textContent = fmt(Math.max(0, left));
+      $('aRestBar').style.width = (100 * left / total) + '%';
+    }
+    function stopRest() { clearInterval(timer); timer = null; rest.classList.remove('on'); pill.classList.remove('on'); pillT.textContent = 'Pause'; }
+    function endRest() { stopRest(); beep(); flash($('aFlash')); toast($('aToast'), 'Pause vorbei, nächster Satz'); }
+    $('aRestPlus').onclick = function () { left += 30; total += 30; tick(); };
+    $('aRestSkip').onclick = stopRest;
+    render();
+  })();
+
+  /* ---------- B ---------- */
+  (function () {
+    var sets = [
+      { warm: true, w: 60, r: 8, done: false, label: 'W1' },
+      { warm: true, w: 85, r: 5, done: false, label: 'W2' },
+      { w: 125, r: 10, done: false, label: '1' },
+      { w: 125, r: 10, done: false, label: '2' },
+      { w: 125, r: 10, done: false, label: '3' }
+    ];
+    var cur = 2, timer = null, left = 0, total = 0, lastDone = -1;
+    var $ = function (id) { return document.getElementById(id); };
+    var dots = $('bDots'), W = $('bW'), R = $('bR'), go = $('bGo'), goT = $('bGoT'), ov = $('bOv'), ring = $('bRing'), undo = $('bUndo');
+    var CIRC = 678.6;
+
+    // Fortschritt über die Einheit (9 Übungen, erste läuft)
+    var ph = ''; for (var i = 0; i < 9; i++) ph += '<i class="' + (i === 0 ? 'c' : '') + '"></i>'; $('bProg').innerHTML = ph;
+
+    function render(popIdx) {
+      var h = '';
+      sets.forEach(function (s, i) {
+        h += '<span class="' + (s.warm ? 'w ' : '') + (i === cur ? 'cur ' : '') + (s.done ? 'd ' : '') + (i === popIdx ? 'pop' : '') + '" data-i="' + i + '">' + s.label + '</span>';
+      });
+      var s = sets[cur];
+      h += '<span class="lbl">' + (s.warm ? 'Aufwärmen' : 'Satz ' + s.label + ' von 3') + '</span>';
+      dots.innerHTML = h;
+      W.textContent = s.w; R.textContent = s.r;
+      goT.textContent = s.done ? 'Satz ' + s.label + ' erledigt' : (s.warm ? 'Aufwärmsatz ' + s.label + ' abhaken' : 'Satz ' + s.label + ' abhaken');
+      undo.hidden = lastDone < 0;
+    }
+    dots.addEventListener('click', function (e) { var d = e.target.closest('span[data-i]'); if (!d) return; cur = +d.dataset.i; render(); });
+    $('bWm').onclick = function () { sets[cur].w = Math.max(0, sets[cur].w - 2.5); render(); };
+    $('bWp').onclick = function () { sets[cur].w += 2.5; render(); };
+    $('bRm').onclick = function () { sets[cur].r = Math.max(0, sets[cur].r - 1); render(); };
+    $('bRp').onclick = function () { sets[cur].r += 1; render(); };
+    go.onclick = function () {
+      var s = sets[cur]; if (s.done) return;
+      s.done = true; lastDone = cur;
+      var idx = cur;
+      var next = sets.findIndex(function (x, i) { return i > idx && !x.done; });
+      render(idx);
+      var nextLabel = next >= 0 ? (sets[next].warm ? 'Aufwärmsatz ' : 'Satz ') + sets[next].label + ' · Beinpresse' : 'Brustpresse';
+      $('bOvNext').textContent = 'Dann ' + nextLabel;
+      startRest(s.warm ? Math.round(DEMO_REST / 2) : DEMO_REST, next >= 0 ? next : cur);
+    };
+    undo.onclick = function () {
+      if (lastDone < 0) return; sets[lastDone].done = false; cur = lastDone; lastDone = -1; stopRest(); render(); toast($('bToast'), 'Satz zurückgenommen');
+    };
+    var pendingCur = cur;
+    function startRest(sec, nextCur) {
+      stopRest(); left = sec; total = sec; pendingCur = nextCur; ov.classList.add('on'); tick();
+      timer = setInterval(function () { left--; tick(); if (left <= 0) endRest(); }, 1000);
+    }
+    function tick() { $('bOvT').textContent = fmt(Math.max(0, left)); ring.style.strokeDashoffset = CIRC * (1 - Math.max(0, left) / total); }
+    function stopRest() { clearInterval(timer); timer = null; ov.classList.remove('on'); }
+    function endRest() { stopRest(); cur = pendingCur; render(); beep(); flash($('bFlash')); toast($('bToast'), 'Pause vorbei'); }
+    $('bOvPlus').onclick = function () { left += 30; total += 30; tick(); };
+    $('bOvSkip').onclick = function () { stopRest(); cur = pendingCur; render(); };
+    render();
+  })();
+})();
+</script>
