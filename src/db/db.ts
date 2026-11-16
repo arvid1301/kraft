@@ -1,9 +1,9 @@
 import Dexie, { type Table } from 'dexie';
 import type { BodyWeight, Exercise, Gym, MachineSetting, Plan, Settings, Workout } from './types';
 
-import { defaultMuscles } from '../logic/muscles';
+import { defaultMuscles, isKnownMuscle } from '../logic/muscles';
 
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 
 export class KraftDB extends Dexie {
   gyms!: Table<Gym, string>;
@@ -31,6 +31,13 @@ export class KraftDB extends Dexie {
     this.version(2).stores(stores).upgrade((tx) =>
       tx.table('exercises').toCollection().modify((e: Exercise) => {
         if (!e.muscles || e.muscles.length === 0) e.muscles = defaultMuscles(e.name, e.muscle);
+      }),
+    );
+    // Version 3: feinere Muskelliste (einzelne Köpfe). Alte, grobe Zuordnungen werden ersetzt.
+    this.version(3).stores(stores).upgrade((tx) =>
+      tx.table('exercises').toCollection().modify((e: Exercise) => {
+        const fine = (e.muscles ?? []).filter((x) => isKnownMuscle(x.id));
+        if (fine.length === 0 || fine.length < (e.muscles ?? []).length) e.muscles = defaultMuscles(e.name, e.muscle);
       }),
     );
   }

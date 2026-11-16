@@ -6,8 +6,8 @@ import { back, go, toast, useLive } from '../state';
 import { Field, Icons, Segment, Switch, TextInput, TopBar } from './components';
 import { ExercisePicker, INPUT_LABELS, NewExerciseSheet } from './ExercisePicker';
 import { fmtTime } from '../logic/timer';
-import { MuscleFigure, MuscleLegend } from './MuscleFigure';
-import { MUSCLE_LABELS, cycleRole, musclesText, rolesMap, type MuscleId, type MuscleRole } from '../logic/muscles';
+import { MuscleFigure, MuscleLegend, roleFill } from './MuscleFigure';
+import { MUSCLE_LABELS, MUSCLE_REGIONS, ROLE_LABELS, cycleRole, musclesText, primaryText, rolesMap, type MuscleId, type MuscleRole, type Role } from '../logic/muscles';
 
 export function Library() {
   const exercises = useLive(() => db.exercises.toArray(), []);
@@ -26,7 +26,7 @@ export function Library() {
         {[...grouped.entries()].map(([m, es]) => (
           <>
             <div class="section-label">{m}</div>
-            <div class="list">{es.map((e) => <button class="row" onClick={() => go(`/uebung/${e.id}`)}><MuscleFigure roles={rolesMap(e.muscles as MuscleRole[])} height={44} /><div class="grow"><div class="title">{e.name}</div><div class="sub">{(e.muscles ?? []).filter((m) => m.role === 3).map((m) => MUSCLE_LABELS[m.id as MuscleId]).join(', ') || INPUT_LABELS[e.input]}{e.unilateral ? ' · pro Seite' : ''}</div></div><Icons.chev /></button>)}</div>
+            <div class="list">{es.map((e) => <button class="row" onClick={() => go(`/uebung/${e.id}`)}><MuscleFigure roles={rolesMap(e.muscles as MuscleRole[])} height={44} /><div class="grow"><div class="title">{e.name}</div><div class="sub">{primaryText(e.muscles) || INPUT_LABELS[e.input]}{e.unilateral ? ' · pro Seite' : ''}</div></div><Icons.chev /></button>)}</div>
           </>
         ))}
       </div>
@@ -68,8 +68,32 @@ export function ExerciseDetail(props: { id: string }) {
           <div class="card pad-sm" style="background:var(--card2);display:flex;flex-direction:column;gap:10px;align-items:center">
             <MuscleFigure roles={rolesMap(e.muscles as MuscleRole[])} height={230} label onTap={(id) => set('muscles', cycleRole((e.muscles ?? []) as MuscleRole[], id))} />
             <MuscleLegend />
-            <p style="font-size:13px;color:var(--muted);text-align:center;line-height:1.4">{musclesText(e.muscles as MuscleRole[]) || 'Noch keine Muskeln zugeordnet. Tipp auf einen Muskel in der Figur.'}</p>
+            <p style="font-size:13px;color:var(--muted);text-align:center;line-height:1.4">{musclesText(e.muscles as MuscleRole[]) || 'Noch keine Muskeln zugeordnet. Tipp auf einen Muskel in der Figur oder wähle unten.'}</p>
           </div>
+        </Field>
+        <Field label="Alle Muskeln im Detail">
+          {MUSCLE_REGIONS.map((region) => (
+            <>
+              <div class="section-label">{region.title}</div>
+              <div class="list">
+                {region.ids.map((id) => {
+                  const cur = (e.muscles ?? []).find((x) => x.id === id)?.role;
+                  const setRole = (r: Role | undefined) => set('muscles', [...(e.muscles ?? []).filter((x) => x.id !== id), ...(r ? [{ id, role: r }] : [])]);
+                  return (
+                    <div class="row" style="min-height:48px;padding:6px 12px">
+                      <div class="grow" style="font-size:14px;font-weight:600">{MUSCLE_LABELS[id]}</div>
+                      <div class="segment" style="flex:none" role="radiogroup" aria-label={MUSCLE_LABELS[id]}>
+                        {([undefined, 3, 2, 1] as (Role | undefined)[]).map((r) => (
+                          <button type="button" role="radio" aria-checked={cur === r} class={cur === r ? 'on' : ''} style={`min-height:32px;padding:0 10px;${cur === r && r ? `background:${roleFill(r)};color:${r === 3 ? 'var(--accent-fg)' : 'var(--fg)'}` : ''}`} title={r ? ROLE_LABELS[r] : 'Nicht beteiligt'} onClick={() => setRole(r)}>{r === 3 ? 'H' : r === 2 ? 'U' : r === 1 ? 'S' : '–'}</button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ))}
+          <p style="font-size:12px;color:var(--muted)">H = Hauptmuskel, U = unterstützend, S = Stabilisator</p>
         </Field>
         <Field label="Ausführungshinweise"><textarea class="input" value={e.notes} onInput={(ev) => set('notes', (ev.target as HTMLTextAreaElement).value)} /></Field>
         <Field label="Videolink"><TextInput type="url" inputMode="url" placeholder="https://" value={e.videoUrl} onInput={(ev) => set('videoUrl', (ev.target as HTMLInputElement).value)} /></Field>

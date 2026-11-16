@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSeed } from '../db/seed';
-import { DEFAULT_MUSCLES, cycleRole, defaultMuscles, musclesText } from './muscles';
+import { DEFAULT_MUSCLES, cycleRole, defaultMuscles, isKnownMuscle, musclesText } from './muscles';
 
 describe('Muskeln je Übung', () => {
   it('jede Übung aus dem Startplan hat eine genaue Zuordnung mit mindestens einem Hauptmuskel', () => {
@@ -12,16 +12,20 @@ describe('Muskeln je Übung', () => {
   });
   it('unbekannte Übungen bekommen eine Zuordnung aus der Muskelgruppe', () => {
     const m = defaultMuscles('Irgendwas Neues', 'Trizeps');
-    expect(m).toEqual([{ id: 'triceps', role: 3 }]);
+    expect(m.map((x) => x.id)).toEqual(['triceps_long', 'triceps_lateral', 'triceps_medial']);
   });
   it('Tippen wechselt die Rolle: Haupt, unterstützend, Stabilisator, keine', () => {
-    let list = cycleRole([], 'chest');
-    expect(list).toEqual([{ id: 'chest', role: 3 }]);
-    list = cycleRole(list, 'chest'); expect(list[0].role).toBe(2);
-    list = cycleRole(list, 'chest'); expect(list[0].role).toBe(1);
-    list = cycleRole(list, 'chest'); expect(list).toEqual([]);
+    let list = cycleRole([], 'chest_mid');
+    expect(list).toEqual([{ id: 'chest_mid', role: 3 }]);
+    list = cycleRole(list, 'chest_mid'); expect(list[0].role).toBe(2);
+    list = cycleRole(list, 'chest_mid'); expect(list[0].role).toBe(1);
+    list = cycleRole(list, 'chest_mid'); expect(list).toEqual([]);
   });
   it('Kurztext nennt Haupt- und Nebenmuskeln', () => {
-    expect(musclesText(DEFAULT_MUSCLES['Beinpresse'])).toBe('Oberschenkel vorn, Gesäß · unterstützend: Oberschenkel hinten, Innenschenkel · stabilisierend: Waden');
+    expect(musclesText(DEFAULT_MUSCLES['Beinstrecker'])).toBe('Quadrizeps Mitte (Rectus femoris), Quadrizeps außen (Vastus lateralis), Quadrizeps innen (VMO)');
+    expect(musclesText(DEFAULT_MUSCLES['Beinbeuger'])).toContain('unterstützend: Wade (Gastrocnemius)');
+  });
+  it('jeder Muskel aus der Zuordnung existiert in der Liste', () => {
+    for (const [name, list] of Object.entries(DEFAULT_MUSCLES)) for (const x of list) expect(isKnownMuscle(x.id), `${name}: ${x.id}`).toBe(true);
   });
 });
