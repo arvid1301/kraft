@@ -4,6 +4,7 @@ import { db, uid } from '../db/db';
 import { MUSCLE_GROUPS, type Exercise, type InputKind, type MuscleGroup } from '../db/types';
 import { useLive } from '../state';
 import { Field, Icons, Segment, Sheet, TextInput } from './components';
+import { defaultMuscles } from '../logic/muscles';
 
 export const INPUT_LABELS: Record<InputKind, string> = {
   kg: 'Gewicht in kg', bodyweight: 'Körpergewicht + Zusatz', trx: 'TRX-Skala', time: 'Zeit', reps: 'Nur Wiederholungen',
@@ -69,7 +70,7 @@ export function NewExerciseSheet(props: { onClose: () => void; onCreated: (e: Ex
     const e: Exercise = {
       id: uid(), name: name.trim(), muscle, input, unilateral, notes: '', videoUrl: '',
       step: input === 'kg' || input === 'bodyweight' ? (big ? 5 : 2.5) : 0, restSec: big ? 150 : 90, warmup: big && input === 'kg',
-      alternatives: [], archived: false, createdAt: Date.now(),
+      alternatives: [], archived: false, createdAt: Date.now(), muscles: defaultMuscles(name.trim(), muscle),
     };
     await db.exercises.add(e);
     props.onCreated(e);

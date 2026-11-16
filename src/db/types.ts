@@ -22,7 +22,8 @@ export interface Gym {
 export interface Exercise {
   id: string;
   name: string;
-  muscle: MuscleGroup;
+  muscle: MuscleGroup;      // grobe Gruppe (für Auswertungen)
+  muscles?: { id: string; role: 1 | 2 | 3 }[]; // genaue Muskeln, 3 = Haupt, 2 = unterstützend, 1 = Stabilisator
   input: InputKind;
   unilateral: boolean;      // einarmig / einbeinig
   notes: string;            // Ausführungshinweise

@@ -13,11 +13,13 @@ import { Confirm, Icons, Sheet, Stepper, fmtNum } from './components';
 import { Sortable } from './Sortable';
 import { ExercisePicker } from './ExercisePicker';
 import { Summary } from './Summary';
+import { MuscleFigure, MuscleLegend } from './MuscleFigure';
+import { MUSCLE_LABELS, ROLE_LABELS, musclesText, rolesMap, type MuscleId } from '../logic/muscles';
 
 const rest = new RestTimer();
 const countdown = new RestTimer();
 
-type SheetKind = null | 'reorder' | 'swap' | 'end' | 'machine' | 'swapScope';
+type SheetKind = null | 'reorder' | 'swap' | 'end' | 'machine' | 'swapScope' | 'muscles';
 
 export function Workout() {
   const [w, setW] = useState<WorkoutT | null>(null);
@@ -234,6 +236,12 @@ export function Workout() {
                 {ex && <span class="tag">{ex.muscle}</span>}
                 <span>{ex?.input === 'time' && ex.unilateral ? Math.ceil(entry.sets.length / 2) : entry.sets.filter((s) => !s.warmup).length} Sätze · {repRange(entry)}{ex?.unilateral ? ' · pro Seite' : ''} · Pause {fmtTime(ex?.restSec ?? 90)}</span>
               </div>
+              {ex && ex.muscles && ex.muscles.length > 0 && (
+                <button type="button" class="muscle-row" onClick={() => setSheet('muscles')} aria-label="Beanspruchte Muskeln anzeigen">
+                  <MuscleFigure roles={rolesMap(ex.muscles)} height={84} />
+                  <span class="muscle-text">{musclesText(ex.muscles)}</span>
+                </button>
+              )}
               {ex && <div class="last">{last ? <>Letztes Mal <b>{lastText(ex, last.sets)}</b> <span>· {new Date(last.workout.startedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span></> : 'Noch keine Werte an diesem Gym'}</div>}
               {suggestion && suggestion.action !== 'none' && (
                 <div class="chips"><button class={`chip ${suggestion.action === 'increase' ? 'accent' : ''}`} onClick={applySuggestion}>{suggestion.action === 'increase' ? '↑ ' : ''}{suggestion.text}</button></div>
@@ -351,6 +359,19 @@ export function Workout() {
         <Sheet title={`Mit ${pendingSwap.name} tauschen`} onClose={() => setSheet(null)}>
           <button class="btn primary" onClick={() => { swapTo(pendingSwap, false); setSheet(null); }}>Nur heute</button>
           <button class="btn" onClick={() => { swapTo(pendingSwap, true); setSheet(null); }}>Dauerhaft im Plan</button>
+        </Sheet>
+      )}
+      {sheet === 'muscles' && ex && (
+        <Sheet title={ex.name} onClose={() => setSheet(null)}>
+          <MuscleFigure roles={rolesMap(ex.muscles)} height={260} label />
+          <MuscleLegend />
+          <div class="list">
+            {([3, 2, 1] as const).map((r) => {
+              const names = (ex.muscles ?? []).filter((x) => x.role === r).map((x) => MUSCLE_LABELS[x.id as MuscleId]);
+              return names.length ? <div class="row"><div class="grow"><div class="title">{ROLE_LABELS[r]}</div><div class="sub" style="white-space:normal">{names.join(', ')}</div></div></div> : null;
+            })}
+          </div>
+          <button class="btn small" onClick={() => go(`/uebung/${ex.id}`)}>Zuordnung in der Bibliothek ändern</button>
         </Sheet>
       )}
       {sheet === 'machine' && ex && <MachineSheet gymId={w.gymId} exercise={ex} existing={machine ?? undefined} onClose={() => setSheet(null)} />}

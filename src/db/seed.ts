@@ -1,8 +1,9 @@
 // Startdaten: Übungsbibliothek und Plan A/B/C. Werden nur beim allerersten Start angelegt.
 import { db, uid } from './db';
 import type { Exercise, Plan, PlanEntry, Settings, Gym } from './types';
+import { defaultMuscles } from '../logic/muscles';
 
-type Spec = Omit<Exercise, 'id' | 'createdAt' | 'archived' | 'alternatives'> & { key: string; alt?: string[] };
+type Spec = Omit<Exercise, 'id' | 'createdAt' | 'archived' | 'alternatives' | 'muscles'> & { key: string };
 
 const BIG = 150;   // Pause große Übungen 2:30
 const SMALL = 90;  // Pause kleine Übungen
@@ -104,6 +105,7 @@ export function buildSeed(gymName: string) {
   }
   const exercises: Exercise[] = EXERCISES.map(({ key, ...rest }) => ({
     ...rest, id: ids.get(key)!, alternatives: altMap.get(key) ?? [], archived: false, createdAt: now,
+    muscles: defaultMuscles(rest.name, rest.muscle),
   }));
 
   const toEntries = (spec: DaySpec): PlanEntry[] => spec.map((s) =>

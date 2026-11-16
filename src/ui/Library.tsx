@@ -6,6 +6,8 @@ import { back, go, toast, useLive } from '../state';
 import { Field, Icons, Segment, Switch, TextInput, TopBar } from './components';
 import { ExercisePicker, INPUT_LABELS, NewExerciseSheet } from './ExercisePicker';
 import { fmtTime } from '../logic/timer';
+import { MuscleFigure, MuscleLegend } from './MuscleFigure';
+import { MUSCLE_LABELS, cycleRole, musclesText, rolesMap, type MuscleId, type MuscleRole } from '../logic/muscles';
 
 export function Library() {
   const exercises = useLive(() => db.exercises.toArray(), []);
@@ -24,7 +26,7 @@ export function Library() {
         {[...grouped.entries()].map(([m, es]) => (
           <>
             <div class="section-label">{m}</div>
-            <div class="list">{es.map((e) => <button class="row" onClick={() => go(`/uebung/${e.id}`)}><div class="grow"><div class="title">{e.name}</div><div class="sub">{INPUT_LABELS[e.input]}{e.unilateral ? ' · pro Seite' : ''}</div></div><Icons.chev /></button>)}</div>
+            <div class="list">{es.map((e) => <button class="row" onClick={() => go(`/uebung/${e.id}`)}><MuscleFigure roles={rolesMap(e.muscles as MuscleRole[])} height={44} /><div class="grow"><div class="title">{e.name}</div><div class="sub">{(e.muscles ?? []).filter((m) => m.role === 3).map((m) => MUSCLE_LABELS[m.id as MuscleId]).join(', ') || INPUT_LABELS[e.input]}{e.unilateral ? ' · pro Seite' : ''}</div></div><Icons.chev /></button>)}</div>
           </>
         ))}
       </div>
@@ -62,6 +64,13 @@ export function ExerciseDetail(props: { id: string }) {
           <Field label={`Pause (${fmtTime(e.restSec)})`}><TextInput type="number" inputMode="numeric" step="15" value={e.restSec} onInput={(ev) => set('restSec', parseInt((ev.target as HTMLInputElement).value) || 90)} /></Field>
         </div>
         <div class="row" style="padding:0;min-height:44px"><div class="grow"><div class="title">Aufwärmsätze</div><div class="sub">1 bis 2 Sätze mit 50 und 70 % vor dieser Übung</div></div><Switch on={e.warmup} onChange={(v) => set('warmup', v)} label="Aufwärmsätze" /></div>
+        <Field label="Beanspruchte Muskeln (antippen zum Ändern)">
+          <div class="card pad-sm" style="background:var(--card2);display:flex;flex-direction:column;gap:10px;align-items:center">
+            <MuscleFigure roles={rolesMap(e.muscles as MuscleRole[])} height={230} label onTap={(id) => set('muscles', cycleRole((e.muscles ?? []) as MuscleRole[], id))} />
+            <MuscleLegend />
+            <p style="font-size:13px;color:var(--muted);text-align:center;line-height:1.4">{musclesText(e.muscles as MuscleRole[]) || 'Noch keine Muskeln zugeordnet. Tipp auf einen Muskel in der Figur.'}</p>
+          </div>
+        </Field>
         <Field label="Ausführungshinweise"><textarea class="input" value={e.notes} onInput={(ev) => set('notes', (ev.target as HTMLTextAreaElement).value)} /></Field>
         <Field label="Videolink"><TextInput type="url" inputMode="url" placeholder="https://" value={e.videoUrl} onInput={(ev) => set('videoUrl', (ev.target as HTMLInputElement).value)} /></Field>
         <Field label="Feste Alternativen">

@@ -1,7 +1,9 @@
 import Dexie, { type Table } from 'dexie';
 import type { BodyWeight, Exercise, Gym, MachineSetting, Plan, Settings, Workout } from './types';
 
-export const DB_VERSION = 1;
+import { defaultMuscles } from '../logic/muscles';
+
+export const DB_VERSION = 2;
 
 export class KraftDB extends Dexie {
   gyms!: Table<Gym, string>;
@@ -15,7 +17,7 @@ export class KraftDB extends Dexie {
   constructor() {
     super('kraft');
     // Neue Versionen werden hier als weitere .version(n) ergänzt; Dexie migriert automatisch.
-    this.version(DB_VERSION).stores({
+    const stores = {
       gyms: 'id, name',
       exercises: 'id, name, muscle, archived',
       plans: 'id',
@@ -23,7 +25,14 @@ export class KraftDB extends Dexie {
       machineSettings: 'id, gymId, exerciseId',
       bodyWeights: 'id, date',
       settings: 'id',
-    });
+    };
+    this.version(1).stores(stores);
+    // Version 2: genaue Muskeln je Übung nachtragen
+    this.version(2).stores(stores).upgrade((tx) =>
+      tx.table('exercises').toCollection().modify((e: Exercise) => {
+        if (!e.muscles || e.muscles.length === 0) e.muscles = defaultMuscles(e.name, e.muscle);
+      }),
+    );
   }
 }
 

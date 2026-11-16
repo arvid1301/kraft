@@ -150,6 +150,9 @@ select.input { appearance: none; -webkit-appearance: none; }
 .timerpill.on { background: var(--accent); color: var(--accent-fg); }
 .wk-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
 .ex-card .name { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+.muscle-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; width: 100%; text-align: left; background: var(--card2); border-radius: 16px; padding: 8px 12px 8px 6px; }
+.muscle-row svg { flex: none; }
+.muscle-text { font-size: 13px; color: var(--muted); line-height: 1.35; }
 .ex-card .last { margin-top: 12px; font-size: 14px; color: var(--muted); }
 .ex-card .last b { color: var(--fg); font-weight: 600; }
 .ex-card .notes { margin-top: 10px; font-size: 14px; color: var(--muted); line-height: 1.4; }
