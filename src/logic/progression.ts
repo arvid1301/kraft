@@ -14,8 +14,9 @@ export function roundToStep(value: number, step: number): number {
 /** lastSets: Sätze des letzten Trainings an diesem Gym (Aufwärmsätze werden ignoriert). */
 export function suggest(exercise: Exercise, lastSets: WorkoutSet[], repMin: number, repMax: number): Suggestion {
   const sets = lastSets.filter((s) => s.done && !s.warmup);
-  if (sets.length === 0) return { action: 'none', text: 'Erstes Mal hier, Gewicht frei wählen' };
-  if (exercise.input === 'time' || exercise.input === 'reps' || exercise.input === 'trx') {
+  const noWeight = exercise.input === 'time' || exercise.input === 'reps' || exercise.input === 'trx';
+  if (sets.length === 0) return { action: 'none', text: noWeight ? 'Erstes Mal hier' : 'Erstes Mal hier, Gewicht frei wählen' };
+  if (noWeight) {
     return { action: 'none', text: 'Letztes Mal wiederholen oder etwas steigern' };
   }
   const weights = sets.map((s) => s.weight ?? 0);

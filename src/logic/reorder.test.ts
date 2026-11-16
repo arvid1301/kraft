@@ -34,6 +34,11 @@ describe('Umsortieren im Training', () => {
     expect(isEntryDone(ex('a', [set(false, true), set(true), set(true)]))).toBe(true);
     expect(isEntryDone(ex('a', [set(true, true), set(true), set(false)]))).toBe(false);
   });
+  it('Aufwärm-Block gilt als erledigt, wenn alle seine Sätze abgehakt sind', () => {
+    const warm: WorkoutEntry = { id: 'w', kind: 'warmup', label: 'Ausfallschritt', repMin: 6, repMax: 6, sets: [set(true, true), set(true, true)], skipped: false };
+    expect(isEntryDone(warm)).toBe(true);
+    expect(nextOpenIndex([warm, ex('a')])).toBe(1);
+  });
   it('springt zur nächsten offenen Übung', () => {
     const list = [ex('a', [set(true), set(true)]), ex('b'), ex('c')];
     expect(nextOpenIndex(list)).toBe(1);

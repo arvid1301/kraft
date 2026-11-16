@@ -105,7 +105,20 @@ export function Workout() {
     const owner = flat.find((f) => f.set.id === setId)?.entry; if (!owner) return;
     const ownerEx = exMap.get(owner.exerciseId ?? '');
     patchEntry(owner.id, (e) => {
-      let next = { ...e, sets: e.sets.map((s) => (s.id === setId ? fn(s) : s)) };
+      // Geänderte Werte auf die folgenden, noch offenen Sätze übernehmen, die denselben alten Wert hatten
+      const idx = e.sets.findIndex((s) => s.id === setId);
+      const before = e.sets[idx];
+      const after = fn(before);
+      const sets = e.sets.map((s, i) => {
+        if (i === idx) return after;
+        if (i < idx || s.done || s.warmup !== before.warmup) return s;
+        let n = s;
+        for (const k of ['weight', 'reps', 'trxPos', 'trxHelp', 'timeSec'] as const) {
+          if (before[k] !== after[k] && s[k] === before[k]) n = { ...n, [k]: after[k] };
+        }
+        return n;
+      });
+      let next = { ...e, sets };
       if (ownerEx) next = refreshWarmup(next, ownerEx);
       return next;
     });
@@ -219,7 +232,7 @@ export function Workout() {
               <h2 class="name">{ex?.name ?? 'Übung'}</h2>
               <div class="meta">
                 {ex && <span class="tag">{ex.muscle}</span>}
-                <span>{entry.sets.filter((s) => !s.warmup).length} Sätze · {repRange(entry)}{ex?.unilateral ? ' · pro Seite' : ''} · Pause {fmtTime(ex?.restSec ?? 90)}</span>
+                <span>{ex?.input === 'time' && ex.unilateral ? Math.ceil(entry.sets.length / 2) : entry.sets.filter((s) => !s.warmup).length} Sätze · {repRange(entry)}{ex?.unilateral ? ' · pro Seite' : ''} · Pause {fmtTime(ex?.restSec ?? 90)}</span>
               </div>
               {ex && <div class="last">{last ? <>Letztes Mal <b>{lastText(ex, last.sets)}</b> <span>· {new Date(last.workout.startedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span></> : 'Noch keine Werte an diesem Gym'}</div>}
               {suggestion && suggestion.action !== 'none' && (
@@ -242,7 +255,8 @@ export function Workout() {
           {flat.map((f, i) => {
             const s = f.set;
             const kind = entryInputKind(entry, f.entry, exMap);
-            const label = s.warmup ? `W${flat.slice(0, i).filter((x) => x.set.warmup && x.entry.id === f.entry.id).length + 1}` : String(flat.slice(0, i + 1).filter((x) => !x.set.warmup && x.entry.id === f.entry.id).length);
+            const nth = flat.slice(0, i + 1).filter((x) => !x.set.warmup && x.entry.id === f.entry.id).length;
+            const label = s.warmup ? `W${flat.slice(0, i).filter((x) => x.set.warmup && x.entry.id === f.entry.id).length + 1}` : kind === 'time' && s.side ? String(Math.ceil(nth / 2)) : String(nth);
             return (
               <button type="button" class={`setrow ${kind === 'trx' ? 'three' : ''} ${s.warmup ? 'warm' : ''} ${active?.set.id === s.id ? 'active' : ''} ${s.done ? 'done' : ''} ${pop === s.id ? 'pop' : ''}`} onClick={() => setActiveSet(s.id)}>
                 <span class="n">{label}</span>
@@ -323,7 +337,7 @@ export function Workout() {
                   <div class="title">{entryName(e, exMap)}</div>
                   <div class="sub">{e.skipped ? 'Übersprungen' : isEntryDone(e) ? 'Fertig' : i === cur ? 'Aktuell' : 'Offen'}</div>
                 </button>
-                {!isEntryDone(e) && <button class="mini" onClick={() => { const entries = pushToEnd(w.entries, i); update({ ...w, entries }); setCur(entries.findIndex((x) => x.id === entry.id)); }}>Besetzt</button>}
+                {!isEntryDone(e) && <button class="mini" onClick={() => { const entries = pushToEnd(w.entries, i); update({ ...w, entries }); const n = nextOpenIndex(entries, Math.min(i, entries.length - 1)); setCur(n >= 0 ? n : i); toast(`${entryName(e, exMap)} nach hinten geschoben`); }}>Besetzt</button>}
                 <button class="mini" onClick={() => update({ ...w, entries: setSkipped(w.entries, i, !e.skipped) })}>{e.skipped ? 'Doch' : 'Skip'}</button>
               </>
             )}

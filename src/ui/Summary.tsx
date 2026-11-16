@@ -42,5 +42,6 @@ export function Summary(props: { workout: Workout; exMap: Map<string, Exercise>;
 export function recordText(r: { kind: string; value: number; reps?: number; previous?: number }): string {
   if (r.kind === 'weight') return `${fmtNum(r.value)} kg${r.reps ? ` × ${r.reps}` : ''} (vorher ${fmtNum(r.previous ?? 0)} kg)`;
   if (r.kind === 'e1rm') return `Geschätztes Maximum ${fmtNum(r.value)} kg (vorher ${fmtNum(r.previous ?? 0)} kg)`;
+  if (r.kind === 'time') return `${r.value} Sekunden (vorher ${r.previous ?? 0})`;
   return `${r.value} Wiederholungen (vorher ${r.previous ?? 0})`;
 }

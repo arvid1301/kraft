@@ -68,7 +68,7 @@ export function Progress() {
               const ex = exercises.find((e) => e.id === id); if (!ex) return null;
               const text = ex.input === 'kg' || ex.input === 'bodyweight'
                 ? `${ex.input === 'bodyweight' && !b.weight ? 'Körpergewicht' : `${fmtNum(b.weight)} kg`}${b.weightReps ? ` × ${b.weightReps}` : ''}${b.e1rm ? ` · max. ca. ${fmtNum(b.e1rm)} kg` : ''}`
-                : `${b.reps} Wdh`;
+                : ex.input === 'time' ? `${b.timeSec} s` : `${b.reps} Wdh`;
               return <div class="row"><div class="grow"><div class="title">{ex.name}</div><div class="sub">{text}</div></div><span class="medal" style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center"><Icons.trophy size={16} /></span></div>;
             })}
           </div>

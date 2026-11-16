@@ -25,7 +25,7 @@ export function entrySets(e: WorkoutEntry) {
 
 export function isEntryDone(e: WorkoutEntry): boolean {
   if (e.skipped) return true;
-  const sets = entrySets(e).filter((s) => !s.warmup);
+  const sets = e.kind === 'warmup' ? e.sets : entrySets(e).filter((s) => !s.warmup);
   return sets.length > 0 && sets.every((s) => s.done);
 }
 

@@ -116,7 +116,7 @@ export interface WorkoutSummary {
 export interface PersonalRecord {
   exerciseId: string;
   exerciseName: string;
-  kind: 'weight' | 'e1rm' | 'reps';
+  kind: 'weight' | 'e1rm' | 'reps' | 'time';
   value: number;
   reps?: number;
   weight?: number;

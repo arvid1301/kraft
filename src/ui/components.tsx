@@ -81,7 +81,7 @@ export function Stepper(props: { label: string; value: number; unit?: string; st
       <div class="lbl">{props.label}</div>
       <button type="button" aria-label={`${props.label} minus`} onClick={() => set(props.value - props.step)}><Icons.minus /></button>
       {typing ? (
-        <input class="val num" type="text" inputMode="decimal" style="background:var(--card);border:0;border-radius:10px;width:100%;min-width:0;color:inherit;font:inherit;padding:2px 0" value={String(props.value).replace('.', ',')} autofocus
+        <input class="val num" type="text" inputMode="decimal" style="background:var(--card);border:0;border-radius:10px;width:100%;min-width:0;color:inherit;font:inherit;padding:2px 0;text-align:center" defaultValue={String(props.value).replace('.', ',')} autofocus
           onFocus={(e) => (e.target as HTMLInputElement).select()}
           onBlur={(e) => commit(e.target as HTMLInputElement)}
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
@@ -103,7 +103,7 @@ export function Ring(props: { value: number; max: number; label: string }) {
   return (
     <div class="ring" role="img" aria-label={`${props.value} von ${props.max} ${props.label}`}>
       <svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r={r} /><circle class="pr" cx="60" cy="60" r={r} stroke-dasharray={c} stroke-dashoffset={c * (1 - p)} /></svg>
-      <div class="num"><div><b class="num">{props.value}<span style="color:var(--muted);font-size:16px"> / {props.max}</span></b><br /><small>{props.label}</small></div></div>
+      <div class="num"><div><b class="num">{props.value}<span style="color:var(--muted);font-size:16px"> / {props.max}</span></b><small style="display:block">{props.label}</small></div></div>
     </div>
   );
 }

@@ -27,7 +27,7 @@ export function volumeKg(w: Workout, exercises: Map<string, Exercise>): number {
   return Math.round(v);
 }
 
-export interface Best { weight: number; e1rm: number; reps: number; weightReps?: number }
+export interface Best { weight: number; e1rm: number; reps: number; weightReps?: number; timeSec: number }
 
 /** Bestwerte pro Übung aus Trainings am selben Gym. */
 export function bestsFromHistory(history: Workout[], gymId: string): Map<string, Best> {
@@ -36,11 +36,12 @@ export function bestsFromHistory(history: Workout[], gymId: string): Map<string,
     if (w.gymId !== gymId || w.status !== 'done') continue;
     for (const { entry, set } of workingSets(w)) {
       if (!entry.exerciseId) continue;
-      const b = best.get(entry.exerciseId) ?? { weight: 0, e1rm: 0, reps: 0 };
+      const b = best.get(entry.exerciseId) ?? { weight: 0, e1rm: 0, reps: 0, timeSec: 0 };
       const wt = set.weight ?? 0, r = set.reps ?? 0;
       if (wt > b.weight) { b.weight = wt; b.weightReps = r; }
       b.e1rm = Math.max(b.e1rm, e1rm(wt, r));
       b.reps = Math.max(b.reps, r);
+      b.timeSec = Math.max(b.timeSec, set.timeSec ?? 0);
       best.set(entry.exerciseId, b);
     }
   }
@@ -60,6 +61,8 @@ export function findRecords(w: Workout, history: Workout[], exercises: Map<strin
       else if (b.e1rm > p.e1rm) out.push({ exerciseId: id, exerciseName: ex.name, kind: 'e1rm', value: b.e1rm, previous: p.e1rm });
     } else if (ex.input === 'reps' || ex.input === 'trx') {
       if (b.reps > p.reps) out.push({ exerciseId: id, exerciseName: ex.name, kind: 'reps', value: b.reps, previous: p.reps });
+    } else if (ex.input === 'time') {
+      if (b.timeSec > p.timeSec) out.push({ exerciseId: id, exerciseName: ex.name, kind: 'time', value: b.timeSec, previous: p.timeSec });
     }
   }
   return out;
