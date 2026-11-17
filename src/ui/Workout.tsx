@@ -15,11 +15,15 @@ import { ExercisePicker } from './ExercisePicker';
 import { Summary } from './Summary';
 import { MuscleFigure, MuscleLegend } from './MuscleFigure';
 import { MUSCLE_LABELS, ROLE_LABELS, musclesText, rolesMap, type MuscleId } from '../logic/muscles';
+import { FEELS, FEEL_LABEL } from '../logic/progression';
+import { COMPLAINT_LIMIT, complaintCounts, gentlerAlternative } from '../logic/complaints';
+import { ExerciseHistory } from './ExerciseHistory';
+import type { Feel } from '../db/types';
 
 const rest = new RestTimer();
 const countdown = new RestTimer();
 
-type SheetKind = null | 'reorder' | 'swap' | 'end' | 'machine' | 'swapScope' | 'muscles';
+type SheetKind = null | 'reorder' | 'swap' | 'end' | 'machine' | 'swapScope' | 'muscles' | 'history';
 
 export function Workout() {
   const [w, setW] = useState<WorkoutT | null>(null);
@@ -32,8 +36,11 @@ export function Workout() {
   const [pop, setPop] = useState<string | null>(null);
   const [summary, setSummary] = useState<WorkoutT | null>(null);
   const [countdownSet, setCountdownSet] = useState<string | null>(null);
+  const [rateSetId, setRateSetId] = useState<string | null>(null);
+  const [flagsOpen, setFlagsOpen] = useState(false);
   const exMap = useLive(async () => new Map((await db.exercises.toArray()).map((e) => [e.id, e])), []);
   const settings = useLive(() => db.settings.get('main'), []);
+  const complaints = useLive(async () => complaintCounts(await db.workouts.where('status').equals('done').toArray()), []);
   const restDone = useRef(false);
   const cdDone = useRef(false);
 
@@ -133,6 +140,7 @@ export function Workout() {
     patchSet(setId, (s) => ({ ...s, done: willDone, doneAt: willDone ? Date.now() : undefined }));
     if (willDone) {
       setPop(setId); setTimeout(() => setPop(null), 400);
+      if (!f.set.warmup && f.entry.kind === 'exercise') { setRateSetId(setId); setFlagsOpen(false); }
       const sec = f.set.warmup ? 60 : (ownerEx?.restSec ?? (entry!.kind === 'warmup' ? 45 : 90));
       // Im Supersatz keine Pause zwischen den beiden Übungen, erst nach der zweiten
       const inSuperset = entry!.kind === 'superset';
@@ -153,8 +161,29 @@ export function Workout() {
       }
     } else {
       rest.stop(); setActiveSet(setId);
+      if (rateSetId === setId) setRateSetId(null);
     }
   }
+
+  // "Wie war der Satz?" gilt für den gerade abgehakten Satz oder einen angetippten, erledigten Satz
+  const rateTarget = (() => {
+    const pick = (id: string | null) => (id ? flat.find((f) => f.set.id === id && f.set.done && !f.set.warmup && f.entry.kind === 'exercise') : undefined);
+    return pick(rateSetId) ?? (active?.set.done ? pick(active.set.id) : undefined);
+  })();
+  const rateSet = (feel: Feel) => {
+    if (!rateTarget) return;
+    const same = rateTarget.set.feel === feel;
+    patchSet(rateTarget.set.id, (s) => ({ ...s, feel: same ? undefined : feel }));
+    if (!same) setRateSetId(null);
+  };
+  const flagSet = (kind: 'Schmerz' | 'Knacken') => {
+    if (!rateTarget) return;
+    const on = rateTarget.set.complaint === kind;
+    patchSet(rateTarget.set.id, (s) => ({ ...s, complaint: on ? null : kind }));
+    if (!on) toast(`${kind} vermerkt. Ab ${COMPLAINT_LIMIT} Trainings schlägt die App eine Alternative vor.`);
+  };
+  const complaint = ex ? complaints?.get(ex.id) : undefined;
+  const gentle = ex && complaint && complaint.count >= COMPLAINT_LIMIT ? gentlerAlternative(ex, [...exMap.values()], complaints!) : undefined;
 
   const applySuggestion = () => {
     if (!suggestion || suggestion.action === 'none' || !ex) return;
@@ -231,7 +260,9 @@ export function Workout() {
             </>
           ) : (
             <>
-              <h2 class="name">{ex?.name ?? 'Übung'}</h2>
+              <button type="button" class="name" style="text-align:left;display:flex;align-items:center;gap:6px" onClick={() => setSheet('history')} aria-label={`Verlauf von ${ex?.name ?? 'Übung'} anzeigen`}>
+                {ex?.name ?? 'Übung'}<span style="color:var(--muted);flex:none"><Icons.history size={18} /></span>
+              </button>
               <div class="meta">
                 {ex && <span class="tag">{ex.muscle}</span>}
                 <span>{ex?.input === 'time' && ex.unilateral ? Math.ceil(entry.sets.length / 2) : entry.sets.filter((s) => !s.warmup).length} Sätze · {repRange(entry)}{ex?.unilateral ? ' · pro Seite' : ''} · Pause {fmtTime(ex?.restSec ?? 90)}</span>
@@ -243,10 +274,23 @@ export function Workout() {
                 </button>
               )}
               {ex && <div class="last">{last ? <>Letztes Mal <b>{lastText(ex, last.sets)}</b> <span>· {new Date(last.workout.startedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span></> : 'Noch keine Werte an diesem Gym'}</div>}
-              {suggestion && suggestion.action !== 'none' && (
-                <div class="chips"><button class={`chip ${suggestion.action === 'increase' ? 'accent' : ''}`} onClick={applySuggestion}>{suggestion.action === 'increase' ? '↑ ' : ''}{suggestion.text}</button></div>
+              {w.deload ? (
+                <div class="chips"><span class="chip">Leichte Woche: weniger Sätze, 10 % leichter. Nicht ans Versagen gehen.</span></div>
+              ) : (
+                <>
+                  {suggestion && suggestion.action !== 'none' && (
+                    <div class="chips"><button class={`chip ${suggestion.action === 'increase' ? 'accent' : ''}`} onClick={applySuggestion}>{suggestion.action === 'increase' ? '↑ ' : ''}{suggestion.text}</button></div>
+                  )}
+                  {suggestion && suggestion.action === 'none' && <div class="chips"><span class="chip">{suggestion.text}</span></div>}
+                </>
               )}
-              {suggestion && suggestion.action === 'none' && <div class="chips"><span class="chip">{suggestion.text}</span></div>}
+              {complaint && complaint.count >= COMPLAINT_LIMIT && (
+                <div class="banner" style="margin-top:10px;background:rgba(255,90,90,.12);flex-wrap:wrap">
+                  <span style="color:var(--bad)"><Icons.info /></span>
+                  <span style="flex:1;min-width:0">{complaint.count}× {complaint.kinds.join(' und ')} gemeldet.{gentle ? ` Schonender wäre ${gentle.name}.` : ''}</span>
+                  {gentle && <button class="mini" onClick={() => { setPendingSwap(gentle); setSheet('swapScope'); }}>Tauschen</button>}
+                </div>
+              )}
               {entry.swappedFromId && <div class="chips"><span class="chip">Getauscht für {exMap.get(entry.swappedFromId)?.name}</span></div>}
               <div class="chips">
                 <button class="mini" onClick={() => setSheet('machine')}><Icons.settings size={16} /> {machine && machine.fields.length ? machine.fields.map((f) => `${f.label} ${f.value}`).join(' · ') : 'Einstellungen'}</button>
@@ -290,6 +334,24 @@ export function Workout() {
             <div class="bar"><i style={`width:${(1 - rest.progress) * 100}%`} /></div>
             <button type="button" onClick={() => rest.add(30)}>+30 s</button>
             <button type="button" onClick={() => rest.stop()}>Weiter</button>
+          </div>
+        )}
+        {rateTarget && (
+          <div class="feel" role="group" aria-label="Wie war der Satz?">
+            <span class="q">Wie war {rateTarget.set.side ? 'die Seite' : 'der Satz'}? {FEELS.find((f) => f.value === rateTarget.set.feel)?.hint ?? 'Leicht = 3+ Wdh übrig, Passt = 1 bis 2'}</span>
+            <div class="row1">
+              {FEELS.map((f) => (
+                <button type="button" class={rateTarget.set.feel === f.value ? 'on' : ''} aria-pressed={rateTarget.set.feel === f.value} title={f.hint} onClick={() => rateSet(f.value)}>{f.label}</button>
+              ))}
+              <button type="button" style="flex:none;width:40px;padding:0" class={`warn ${rateTarget.set.complaint ? 'on' : ''}`} aria-label="Schmerz oder Knacken melden" aria-expanded={flagsOpen} onClick={() => setFlagsOpen(!flagsOpen)}>!</button>
+            </div>
+            {flagsOpen && (
+              <div class="row2">
+                {(['Schmerz', 'Knacken'] as const).map((k) => (
+                  <button type="button" class={`warn ${rateTarget.set.complaint === k ? 'on' : ''}`} aria-pressed={rateTarget.set.complaint === k} onClick={() => flagSet(k)}>{k}</button>
+                ))}
+              </div>
+            )}
           </div>
         )}
         {active && inputKind === 'time' ? (
@@ -374,6 +436,11 @@ export function Workout() {
           <button class="btn small" onClick={() => go(`/uebung/${ex.id}`)}>Zuordnung in der Bibliothek ändern</button>
         </Sheet>
       )}
+      {sheet === 'history' && ex && (
+        <Sheet title={ex.name} onClose={() => setSheet(null)}>
+          <ExerciseHistory exercise={ex} gymId={w.gymId} />
+        </Sheet>
+      )}
       {sheet === 'machine' && ex && <MachineSheet gymId={w.gymId} exercise={ex} existing={machine ?? undefined} onClose={() => setSheet(null)} />}
       {sheet === 'end' && (
         <Sheet title="Training beenden?" onClose={() => setSheet(null)}>
@@ -424,12 +491,14 @@ function colLabel(kind: Kind, i: number): string {
 }
 function setCells(kind: Kind, s: WorkoutSet, owner: WorkoutEntry, exName?: string) {
   const name = exName ? <span class="exn">{exName}</span> : null;
+  // Gefühl und Beschwerde klein unter dem letzten Wert
+  const tag = s.complaint ? <span class="feel-tag bad">{s.complaint}</span> : s.feel ? <span class="feel-tag">{FEEL_LABEL[s.feel]}</span> : null;
   switch (kind) {
-    case 'kg': return <><span class="v num">{name}{fmtNum(s.weight ?? 0)}<small>kg</small></span><span class="v num">{s.reps ?? 0}</span></>;
-    case 'bodyweight': return <><span class="v num">{name}{s.weight ? `${s.weight > 0 ? '+' : ''}${fmtNum(s.weight)}` : 'KG'}{s.weight ? <small>kg</small> : null}</span><span class="v num">{s.reps ?? 0}</span></>;
-    case 'trx': return <><span class="v num">{name}{s.trxPos ?? 3}<small>/5</small></span><span class="v num">{s.trxHelp ?? 3}<small>/5</small></span><span class="v num">{s.reps ?? 0}</span></>;
-    case 'time': return <><span class="v">{name}{s.side === 'L' ? 'Links' : s.side === 'R' ? 'Rechts' : '–'}</span><span class="v num">{s.timeSec ?? 0}<small>s</small></span></>;
-    default: return <><span class="v" style="color:var(--muted)">{name}{owner.kind === 'warmup' ? 'pro Bein' : '–'}</span><span class="v num">{s.reps ?? 0}</span></>;
+    case 'kg': return <><span class="v num">{name}{fmtNum(s.weight ?? 0)}<small>kg</small></span><span class="v num">{s.reps ?? 0}{tag}</span></>;
+    case 'bodyweight': return <><span class="v num">{name}{s.weight ? `${s.weight > 0 ? '+' : ''}${fmtNum(s.weight)}` : 'KG'}{s.weight ? <small>kg</small> : null}</span><span class="v num">{s.reps ?? 0}{tag}</span></>;
+    case 'trx': return <><span class="v num">{name}{s.trxPos ?? 3}<small>/5</small></span><span class="v num">{s.trxHelp ?? 3}<small>/5</small></span><span class="v num">{s.reps ?? 0}{tag}</span></>;
+    case 'time': return <><span class="v">{name}{s.side === 'L' ? 'Links' : s.side === 'R' ? 'Rechts' : '–'}</span><span class="v num">{s.timeSec ?? 0}<small>s</small>{tag}</span></>;
+    default: return <><span class="v" style="color:var(--muted)">{name}{owner.kind === 'warmup' ? 'pro Bein' : '–'}</span><span class="v num">{s.reps ?? 0}{tag}</span></>;
   }
 }
 export function lastText(ex: Exercise, sets: WorkoutSet[]): string {

@@ -103,7 +103,7 @@ export function Ring(props: { value: number; max: number; label: string }) {
   return (
     <div class="ring" role="img" aria-label={`${props.value} von ${props.max} ${props.label}`}>
       <svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r={r} /><circle class="pr" cx="60" cy="60" r={r} stroke-dasharray={c} stroke-dashoffset={c * (1 - p)} /></svg>
-      <div class="num"><div><b class="num">{props.value}<span style="color:var(--muted);font-size:16px"> / {props.max}</span></b><small style="display:block">{props.label}</small></div></div>
+      <div class="ring-num"><div><b class="num">{props.value}<span style="color:var(--muted);font-size:16px"> / {props.max}</span></b><small style="display:block">{props.label}</small></div></div>
     </div>
   );
 }

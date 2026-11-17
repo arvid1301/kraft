@@ -3,8 +3,12 @@ import { db } from '../db/db';
 import { trend, weeklyAverages } from '../logic/bodyweight';
 import { bestsFromHistory } from '../logic/records';
 import { isoDate } from '../logic/week';
-import { toast, useLive } from '../state';
-import { Icons, Sheet, Stepper, fmtNum } from './components';
+import { go, toast, useLive } from '../state';
+import { Icons, Segment, Sheet, Stepper, fmtNum } from './components';
+import { thisWeek, workoutMuscleSets } from '../logic/volume';
+import { checkDeload } from '../logic/deload';
+import { MapLegend, MuscleMapDetail, WeekFigure, priorityProgress } from './MuscleMap';
+import { DeloadCard } from './Deload';
 
 export function Progress() {
   const data = useLive(async () => {
@@ -13,8 +17,15 @@ export function Progress() {
   }, []);
   const [entering, setEntering] = useState(false);
   const [kg, setKg] = useState(70);
+  const [which, setWhich] = useState<'this' | 'last'>('this');
+  const [detail, setDetail] = useState(false);
   if (!data) return <div class="screen" />;
   const { bw, settings, workouts, exercises } = data;
+  const exMap = new Map(exercises.map((e) => [e.id, e]));
+  const refDay = new Date(); if (which === 'last') refDay.setDate(refDay.getDate() - 7);
+  const weekSets = workoutMuscleSets(thisWeek(workouts, refDay), exMap);
+  const prio = priorityProgress(weekSets);
+  const deload = checkDeload(workouts, settings.currentGymId, exMap);
   const t = trend(bw, settings.targetKg, settings.ratePerWeek);
   const weeks = weeklyAverages(bw).slice(-8);
   const today = isoDate();
@@ -33,6 +44,18 @@ export function Progress() {
     <div class="screen">
       <div class="page-title"><div><h1>Fortschritt</h1><p class="sub">Ziel {fmtNum(settings.targetKg)} kg · +{fmtNum(settings.ratePerWeek)} kg pro Woche</p></div></div>
       <div class="screen-body">
+        <div class="card" style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <div class="section-label" style="padding:0">Muskelkarte</div>
+            <Segment value={which} options={[{ value: 'this', label: 'Diese Woche' }, { value: 'last', label: 'Vorwoche' }]} onChange={setWhich} />
+          </div>
+          <div style="display:flex;justify-content:center"><WeekFigure sets={weekSets} height={300} label /></div>
+          <MapLegend />
+          <p style="font-size:14px;line-height:1.45">Arme und Schultern: <b class="num">{prio.ok} von {prio.total}</b> Muskeln im Ziel.</p>
+          <button class="btn small" onClick={() => setDetail(!detail)}>{detail ? 'Details ausblenden' : 'Alle Muskeln im Detail'}</button>
+          {detail && <MuscleMapDetail sets={weekSets} />}
+        </div>
+        <DeloadCard check={deload} settings={settings} showInfo />
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
             <div>
@@ -61,7 +84,7 @@ export function Progress() {
           {bw.length > 0 && bw.length < 7 && <p style="color:var(--muted);font-size:13px;margin-top:10px">Tipp: morgens nach dem Aufstehen wiegen, dann schwankt es am wenigsten.</p>}
         </div>
 
-        <div class="section-label">Bestwerte an diesem Gym</div>
+        <div class="section-label">Bestwerte an diesem Gym · antippen für Verlauf</div>
         {bests.size === 0 ? <p class="empty">Nach dem ersten Training erscheinen hier deine Bestwerte je Übung.</p> : (
           <div class="list">
             {[...bests.entries()].map(([id, b]) => {
@@ -69,7 +92,7 @@ export function Progress() {
               const text = ex.input === 'kg' || ex.input === 'bodyweight'
                 ? `${ex.input === 'bodyweight' && !b.weight ? 'Körpergewicht' : `${fmtNum(b.weight)} kg`}${b.weightReps ? ` × ${b.weightReps}` : ''}${b.e1rm ? ` · max. ca. ${fmtNum(b.e1rm)} kg` : ''}`
                 : ex.input === 'time' ? `${b.timeSec} s` : `${b.reps} Wdh`;
-              return <div class="row"><div class="grow"><div class="title">{ex.name}</div><div class="sub">{text}</div></div><span class="medal" style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center"><Icons.trophy size={16} /></span></div>;
+              return <button class="row" onClick={() => go(`/uebung/${ex.id}`)}><div class="grow"><div class="title">{ex.name}</div><div class="sub">{text}</div></div><Icons.chev /></button>;
             })}
           </div>
         )}

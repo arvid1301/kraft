@@ -76,8 +76,12 @@ export interface WorkoutSet {
   side?: 'L' | 'R';
   done: boolean;
   doneAt?: number;
-  complaint?: 'Schmerz' | 'Knacken' | null; // Version 2
+  feel?: Feel;              // Wie war der Satz?
+  complaint?: 'Schmerz' | 'Knacken' | null;
 }
+
+// leicht = 3+ Wdh übrig, passt = 1 bis 2 übrig, hart = 0 übrig, versagen = nicht mehr geschafft
+export type Feel = 'easy' | 'good' | 'hard' | 'fail';
 
 export interface WorkoutEntry {
   id: string;
@@ -105,6 +109,9 @@ export interface Workout {
   entries: WorkoutEntry[];
   bodyWeightKg?: number;    // für Volumen bei Körpergewichtsübungen
   summary?: WorkoutSummary;
+  timeBudgetMin?: number;   // Zeitmodus
+  deload?: boolean;         // leichte Woche
+  catchUp?: boolean;        // mit Nachholvorschlag gestartet
 }
 
 export interface WorkoutSummary {
@@ -148,7 +155,9 @@ export interface Settings {
   sound: boolean;
   keepAwake: boolean;
   installedAt: number;
-  // Version 2: Protein, Kreatin, Schlaf
+  deloadUntil?: number;     // leichte Woche aktiv bis
+  deloadDismissedAt?: number;
+  // später: Protein, Kreatin, Schlaf
 }
 
 export interface BackupFile {

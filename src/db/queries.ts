@@ -1,6 +1,7 @@
 // Datenbank-Zugriffe, die mehrere Bildschirme brauchen.
 import { db, uid } from './db';
-import type { BackupFile, Exercise, PlanDay, Settings, Workout, WorkoutEntry } from './types';
+import type { BackupFile, Exercise, PlanDay, PlanEntry, Settings, Workout, WorkoutEntry } from './types';
+import { applyDeload } from '../logic/deload';
 import { buildWorkoutEntries, type LastLookup, type LastPerformance } from '../logic/workoutBuild';
 import { allEntries, findRecords, volumeKg, workingSets } from '../logic/records';
 import { DB_VERSION } from './db';
@@ -54,14 +55,17 @@ export async function activeWorkout(): Promise<Workout | undefined> {
   return db.workouts.where('status').equals('active').first();
 }
 
-export async function startWorkout(day: PlanDay, planId: string): Promise<Workout> {
+export async function startWorkout(day: PlanDay, planId: string, opts: { entries?: PlanEntry[]; timeBudgetMin?: number; catchUp?: boolean } = {}): Promise<Workout> {
   const s = await getSettings();
   const exMap = await exerciseMap();
   const last = await lastLookup(s.currentGymId);
   const latestBw = (await db.bodyWeights.orderBy('date').reverse().first())?.kg;
+  const deload = !!s.deloadUntil && s.deloadUntil > Date.now();
+  let entries = buildWorkoutEntries({ ...day, entries: opts.entries ?? day.entries }, exMap, last);
+  if (deload) entries = applyDeload(entries, exMap);
   const w: Workout = {
     id: uid(), gymId: s.currentGymId, planId, dayId: day.id, dayName: day.name, startedAt: Date.now(), status: 'active',
-    entries: buildWorkoutEntries(day, exMap, last), bodyWeightKg: latestBw,
+    entries, bodyWeightKg: latestBw, timeBudgetMin: opts.timeBudgetMin, deload: deload || undefined, catchUp: opts.catchUp || undefined,
   };
   await db.workouts.add(w);
   return w;
@@ -92,6 +96,19 @@ export async function finishWorkout(w: Workout): Promise<Workout> {
     if (idx >= 0) await db.plans.put({ ...plan, nextDayIndex: (idx + 1) % plan.days.length });
   }
   return done;
+}
+
+/** Alle Trainings mit dieser Übung an diesem Gym, neueste zuerst. */
+export async function exerciseHistory(gymId: string, exerciseId: string, limit = 12) {
+  const done = await db.workouts.where('gymId').equals(gymId).and((w) => w.status === 'done').toArray();
+  done.sort((a, b) => b.startedAt - a.startedAt);
+  const out: { workout: Workout; entry: WorkoutEntry }[] = [];
+  for (const w of done) {
+    const e = allEntries(w).find((x) => x.exerciseId === exerciseId && x.sets.some((s) => s.done && !s.warmup));
+    if (e) out.push({ workout: w, entry: e });
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 export async function discardWorkout(w: Workout) {

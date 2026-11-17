@@ -7,6 +7,7 @@ import { Field, Icons, Segment, Switch, TextInput, TopBar } from './components';
 import { ExercisePicker, INPUT_LABELS, NewExerciseSheet } from './ExercisePicker';
 import { fmtTime } from '../logic/timer';
 import { MuscleFigure, MuscleLegend, roleFill } from './MuscleFigure';
+import { ExerciseHistory } from './ExerciseHistory';
 import { MUSCLE_LABELS, MUSCLE_REGIONS, ROLE_LABELS, cycleRole, musclesText, primaryText, rolesMap, type MuscleId, type MuscleRole, type Role } from '../logic/muscles';
 
 export function Library() {
@@ -94,6 +95,9 @@ export function ExerciseDetail(props: { id: string }) {
             </>
           ))}
           <p style="font-size:12px;color:var(--muted)">H = Hauptmuskel, U = unterstützend, S = Stabilisator</p>
+        </Field>
+        <Field label={`Verlauf · ${data.gyms.find((g) => g.id === data.settings.currentGymId)?.name ?? 'dieses Gym'}`}>
+          <ExerciseHistory exercise={e} gymId={data.settings.currentGymId} />
         </Field>
         <Field label="Ausführungshinweise"><textarea class="input" value={e.notes} onInput={(ev) => set('notes', (ev.target as HTMLTextAreaElement).value)} /></Field>
         <Field label="Videolink"><TextInput type="url" inputMode="url" placeholder="https://" value={e.videoUrl} onInput={(ev) => set('videoUrl', (ev.target as HTMLInputElement).value)} /></Field>
