@@ -13,7 +13,7 @@ describe('Training aus dem Plan bauen', () => {
   it('Tag A hat Aufwärm-Block, Aufwärmsätze nur bei der ersten Übung je Muskelgruppe', () => {
     const dayA = seed.plan.days[0];
     const entries = buildWorkoutEntries(dayA, exMap, (id) => (id === byName('Beinpresse').id ? { weight: 120, reps: 12 } : { weight: 50, reps: 10 }));
-    expect(entries[0].kind).toBe('warmup');
+    expect(entries[2].kind).toBe('warmup'); // Ausfallschritt vor der Beinpresse
     const bein = entries.find((e) => e.exerciseId === byName('Beinpresse').id)!;
     expect(bein.sets.filter((s) => s.warmup).map((s) => s.weight)).toEqual([60, 85]);
     expect(bein.sets.filter((s) => !s.warmup)).toHaveLength(3);

@@ -2,8 +2,9 @@ import Dexie, { type Table } from 'dexie';
 import type { BodyWeight, Exercise, Gym, MachineSetting, Plan, Settings, Workout } from './types';
 
 import { defaultMuscles, isKnownMuscle } from '../logic/muscles';
+import { updatePlanNov2026 } from './planUpdate';
 
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 export class KraftDB extends Dexie {
   gyms!: Table<Gym, string>;
@@ -40,6 +41,15 @@ export class KraftDB extends Dexie {
         if (fine.length === 0 || fine.length < (e.muscles ?? []).length) e.muscles = defaultMuscles(e.name, e.muscle);
       }),
     );
+    // Version 4: neuer Trainingsplan vom 18.11.2026 (Reihenfolge, neue Übungen, Wadenheben)
+    this.version(4).stores(stores).upgrade(async (tx) => {
+      const plans = (await tx.table('plans').toArray()) as Plan[];
+      if (plans.length === 0) return;
+      const exercises = (await tx.table('exercises').toArray()) as Exercise[];
+      const r = updatePlanNov2026(exercises, plans[0]);
+      if (r.changed.length) await tx.table('exercises').bulkPut(r.changed);
+      await tx.table('plans').put(r.plan);
+    });
   }
 }
 

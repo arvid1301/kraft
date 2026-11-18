@@ -3,7 +3,7 @@ import { db, uid } from './db';
 import type { Exercise, Plan, PlanEntry, Settings, Gym } from './types';
 import { defaultMuscles } from '../logic/muscles';
 
-type Spec = Omit<Exercise, 'id' | 'createdAt' | 'archived' | 'alternatives' | 'muscles'> & { key: string };
+export type Spec = Omit<Exercise, 'id' | 'createdAt' | 'archived' | 'alternatives' | 'muscles'> & { key: string };
 
 const BIG = 150;   // Pause große Übungen 2:30
 const SMALL = 90;  // Pause kleine Übungen
@@ -30,8 +30,11 @@ const EXERCISES: Spec[] = [
   { key: 'landmine_press', name: 'Landmine Press einarmig, kniend', muscle: 'Brust', input: 'kg', unilateral: true, step: 2.5, restSec: BIG, warmup: true, notes: 'Halbkniend, Schulterblatt frei nach vorn drücken.', videoUrl: '' },
   { key: 'trx_rudern', name: 'TRX Rudern mit erhöhten Füßen', muscle: 'Rücken', input: 'trx', unilateral: false, step: 0, restSec: SMALL, warmup: false, notes: 'Körper gerade wie ein Brett, Schulterblätter zusammen.', videoUrl: '' },
   { key: 'butterfly_einarmig', name: 'Butterfly einarmig an der Maschine', muscle: 'Brust', input: 'kg', unilateral: true, step: 2.5, restSec: SMALL, warmup: false, notes: 'Innen kurz anspannen, langsam öffnen.', videoUrl: '' },
+  { key: 'schraegbank_maschine', name: 'Schrägbank Brustpresse an der Maschine', muscle: 'Brust', input: 'kg', unilateral: false, step: 5, restSec: BIG, warmup: true, notes: 'Lehne 30 Grad, Schulterblätter zusammen, nicht ganz durchstrecken.', videoUrl: '' },
+  { key: 'brustpresse_neutral', name: 'Brustpresse an der Maschine mit neutralem Griff', muscle: 'Brust', input: 'kg', unilateral: false, step: 5, restSec: BIG, warmup: true, notes: 'Handflächen zeigen zueinander, Ellbogen nah am Körper. Schonender für die Schulter.', videoUrl: '' },
+  { key: 'rueckenstrecker_maschine', name: 'Rückenstrecker an der Maschine', muscle: 'Rücken', input: 'kg', unilateral: false, step: 5, restSec: BIG, warmup: false, notes: 'Langsam aus der Hüfte strecken, oben nicht überstrecken.', videoUrl: '' },
+  { key: 'wadenheben', name: 'Wadenheben', muscle: 'Waden', input: 'kg', unilateral: false, step: 5, restSec: SMALL, warmup: false, notes: 'Unten volle Dehnung, oben kurz halten, nicht federn.', videoUrl: '' },
   // Alternativen, die nicht im Plan stehen
-  { key: 'schraegbank_maschine', name: 'Schrägbankdrücken an der Maschine', muscle: 'Brust', input: 'kg', unilateral: false, step: 5, restSec: BIG, warmup: true, notes: 'Lehne 30 Grad.', videoUrl: '' },
   { key: 'kh_curl_schraegbank', name: 'Kurzhantel Curls auf der Schrägbank', muscle: 'Bizeps', input: 'kg', unilateral: false, step: 2, restSec: SMALL, warmup: false, notes: 'Arme hängen lassen, volle Dehnung.', videoUrl: '' },
   { key: 'trizeps_pushdown_seil', name: 'Trizeps Pushdown mit Seil', muscle: 'Trizeps', input: 'kg', unilateral: false, step: 2.5, restSec: SMALL, warmup: false, notes: 'Unten die Enden auseinanderziehen.', videoUrl: '' },
   { key: 'pull_through', name: 'Pull Through am Kabel', muscle: 'Gesäß', input: 'kg', unilateral: false, step: 5, restSec: BIG, warmup: false, notes: 'Hüfte nach hinten schieben, mit dem Gesäß nach vorn drücken.', videoUrl: '' },
@@ -44,44 +47,47 @@ const ALTERNATIVES: [string, string][] = [
   ['kabelfly_unten', 'butterfly_einarmig'],
   ['trizeps_pushdown_einarmig', 'trizeps_pushdown_seil'],
   ['hyperextensions', 'pull_through'],
+  ['rueckenstrecker_maschine', 'hyperextensions'],
+  ['brustpresse_neutral', 'landmine_press'],
 ];
 
 // Plan: [key, sets, repMin, repMax] oder Aufwärm-Block oder Zeitübung
-type DaySpec = (
+export type DaySpec = (
   | { ex: string; sets: number; min: number; max: number; time?: number }
   | { warmup: string; sets: number; min: number; max: number }
 )[];
 
 const WARMUP_LUNGES = { warmup: 'Ausfallschritt mit Rotation', sets: 2, min: 6, max: 6 };
 
+// Plan, Stand 18.11.2026
 const DAY_A: DaySpec = [
-  WARMUP_LUNGES,
-  { ex: 'beinpresse', sets: 3, min: 8, max: 12 },
   { ex: 'brustpresse', sets: 3, min: 8, max: 10 },
   { ex: 'rudern_eng', sets: 3, min: 8, max: 12 },
+  WARMUP_LUNGES,
+  { ex: 'beinpresse', sets: 3, min: 8, max: 12 },
   { ex: 'seitheben_kabel', sets: 4, min: 12, max: 20 },
   { ex: 'bayesian_curl', sets: 4, min: 8, max: 12 },
   { ex: 'trizeps_overhead', sets: 4, min: 8, max: 12 },
-  { ex: 'beinbeuger', sets: 3, min: 10, max: 12 },
+  { ex: 'beinbeuger', sets: 4, min: 10, max: 12 },
+  { ex: 'wadenheben', sets: 3, min: 10, max: 15 },
   { ex: 'bauchroller', sets: 3, min: 0, max: 0 },
   { ex: 'standwaage_bosu', sets: 3, min: 0, max: 0, time: 30 },
 ];
 const DAY_B: DaySpec = [
   { ex: 'klimmzuege', sets: 3, min: 6, max: 10 },
-  { ex: 'hyperextensions', sets: 3, min: 10, max: 15 },
-  { ex: 'kabelfly_unten', sets: 3, min: 10, max: 15 },
+  { ex: 'schraegbank_maschine', sets: 3, min: 8, max: 12 },
+  { ex: 'trx_kniebeuge', sets: 3, min: 8, max: 10 },
+  { ex: 'rueckenstrecker_maschine', sets: 3, min: 10, max: 15 },
   { ex: 'seitheben_kabel', sets: 4, min: 12, max: 20 },
   { ex: 'reverse_butterfly', sets: 3, min: 12, max: 15 },
   { ex: 'seilcurls', sets: 4, min: 10, max: 12 },
   { ex: 'trizeps_pushdown_einarmig', sets: 4, min: 10, max: 12 },
   { ex: 'beinstrecker', sets: 3, min: 10, max: 15 },
-  { ex: 'trx_kniebeuge', sets: 3, min: 8, max: 10 },
-  { ex: 'standwaage_bosu', sets: 3, min: 0, max: 0, time: 30 },
+  { ex: 'wadenheben', sets: 3, min: 10, max: 15 },
 ];
 const DAY_C: DaySpec = [
-  WARMUP_LUNGES,
+  { ex: 'brustpresse_neutral', sets: 3, min: 8, max: 12 },
   { ex: 'latzug_breit', sets: 3, min: 8, max: 12 },
-  { ex: 'landmine_press', sets: 3, min: 8, max: 12 },
   { ex: 'beinpresse', sets: 3, min: 8, max: 12 },
   { ex: 'trx_rudern', sets: 3, min: 8, max: 12 },
   { ex: 'butterfly_einarmig', sets: 3, min: 10, max: 15 },
@@ -89,10 +95,13 @@ const DAY_C: DaySpec = [
   { ex: 'reverse_butterfly', sets: 3, min: 12, max: 15 },
   { ex: 'bayesian_curl', sets: 4, min: 8, max: 12 },
   { ex: 'trizeps_overhead', sets: 4, min: 8, max: 12 },
-  { ex: 'beinbeuger', sets: 3, min: 10, max: 12 },
+  { ex: 'beinbeuger', sets: 4, min: 10, max: 12 },
   { ex: 'bauchroller', sets: 3, min: 0, max: 0 },
-  { ex: 'standwaage_bosu', sets: 3, min: 0, max: 0, time: 30 },
 ];
+
+export const DAY_SPECS: DaySpec[] = [DAY_A, DAY_B, DAY_C];
+export const EXERCISE_SPECS = EXERCISES;
+export const ALTERNATIVE_KEYS = ALTERNATIVES;
 
 export function buildSeed(gymName: string) {
   const now = Date.now();

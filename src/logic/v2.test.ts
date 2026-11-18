@@ -32,8 +32,8 @@ describe('Muskelkarte: harte Sätze je Muskel', () => {
     expect(sets.side_delts).toBe(4);
     // Gesäß: Beinpresse 3 Sätze + Standwaage 3 Sätze (links und rechts zusammen), beide als Hauptmuskel
     expect(sets.glute_max).toBe(6);
-    // Waden sind bei der Beinpresse nur Stabilisator, beim Beinbeuger unterstützend (3 × 0,5)
-    expect(sets.gastrocnemius).toBe(1.5);
+    // Waden: Wadenheben 3 Sätze als Hauptmuskel + Beinbeuger 4 Sätze unterstützend (4 × 0,5)
+    expect(sets.gastrocnemius).toBe(5);
   });
   it('Standwaage zählt links und rechts zusammen als einen Satz', () => {
     const w = doneWorkout(0, Date.now());
@@ -177,7 +177,7 @@ describe('Beschwerden', () => {
   });
   it('schlägt zuerst die feste Alternative vor', () => {
     const c = complaintCounts([mk('Knacken', 1), mk('Knacken', 2)]);
-    expect(gentlerAlternative(lm, seed.exercises, c)?.name).toBe('Schrägbankdrücken an der Maschine');
+    expect(gentlerAlternative(lm, seed.exercises, c)?.name).toBe('Schrägbank Brustpresse an der Maschine');
   });
   it('ohne feste Alternative: Übung mit gleichem Hauptmuskel', () => {
     const solo: Exercise = { ...lm, alternatives: [] };
