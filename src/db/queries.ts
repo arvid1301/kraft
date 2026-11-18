@@ -125,16 +125,19 @@ export function entryName(e: WorkoutEntry, exMap: Map<string, Exercise>): string
   return exMap.get(e.exerciseId ?? '')?.name ?? 'Übung';
 }
 
-export async function exportBackup(): Promise<string> {
+/** Backup-Text erzeugen, ohne etwas zu verändern. */
+export async function buildBackup(): Promise<string> {
   const file: BackupFile = {
     app: 'kraft', version: DB_VERSION, exportedAt: new Date().toISOString(),
     gyms: await db.gyms.toArray(), exercises: await db.exercises.toArray(), plans: await db.plans.toArray(),
     workouts: await db.workouts.toArray(), machineSettings: await db.machineSettings.toArray(),
     bodyWeights: await db.bodyWeights.toArray(), settings: await db.settings.toArray(),
   };
-  await patchSettings({ lastBackupAt: Date.now() });
-  file.settings = await db.settings.toArray();
   return JSON.stringify(file);
+}
+
+export async function markBackedUp() {
+  await patchSettings({ lastBackupAt: Date.now() });
 }
 
 export async function importBackup(text: string): Promise<{ workouts: number; exercises: number }> {

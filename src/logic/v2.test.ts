@@ -49,7 +49,8 @@ describe('Muskelkarte: harte Sätze je Muskel', () => {
     expect(targetStatus('side_delts', week.side_delts)).toBe('ok');
     expect(targetStatus('biceps_long', week.biceps_long)).toBe('ok');
     expect(targetStatus('triceps_long', week.triceps_long)).toBe('ok');
-    expect(targetStatus('gastrocnemius', 3)).toBe('untracked');
+    expect(targetStatus('soleus', 3)).toBe('untracked');
+    expect(targetStatus('gastrocnemius', week.gastrocnemius)).toBe('ok'); // Waden seit dem neuen Plan im Ziel
     expect(targetStatus('lats', 0)).toBe('none');
   });
   it('nimmt nur Trainings dieser Woche', () => {

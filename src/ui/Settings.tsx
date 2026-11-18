@@ -1,12 +1,16 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { db, uid } from '../db/db';
-import { exportBackup, importBackup, patchSettings, wipeAll } from '../db/queries';
-import { downloadText, pickFile } from '../device';
+import { buildBackup, importBackup, markBackedUp, patchSettings, wipeAll } from '../db/queries';
+import { pickFile, shareFile, storagePersisted } from '../device';
 import { toast, useLive } from '../state';
 import { Confirm, Field, Icons, Sheet, Stepper, Switch, TextInput, fmtNum } from './components';
 
 export function SettingsScreen() {
   const data = useLive(async () => ({ settings: (await db.settings.get('main'))!, gyms: await db.gyms.toArray() }), []);
+  // Backup vorab bereitlegen: iOS erlaubt das Teilen-Menü nur direkt nach dem Tipp
+  const backupText = useLive(() => buildBackup(), []);
+  const [persisted, setPersisted] = useState<boolean | undefined>(undefined);
+  useEffect(() => { storagePersisted().then(setPersisted); }, []);
   const [sheet, setSheet] = useState<null | 'gym' | 'newGym' | 'goals' | 'reset' | 'import'>(null);
   const [gymName, setGymName] = useState('');
   const [renaming, setRenaming] = useState<string | null>(null);
@@ -15,10 +19,14 @@ export function SettingsScreen() {
   const gym = gyms.find((g) => g.id === settings.currentGymId);
   const backupAge = settings.lastBackupAt ? Math.floor((Date.now() - settings.lastBackupAt) / 86400000) : null;
 
-  const doExport = async () => {
-    const json = await exportBackup();
-    downloadText(`kraft-backup-${new Date().toISOString().slice(0, 10)}.json`, json);
-    toast('Backup erstellt');
+  const doExport = () => {
+    if (!backupText) { toast('Backup wird vorbereitet, gleich nochmal tippen'); return; }
+    const name = `kraft-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    shareFile(name, backupText).then(async (r) => {
+      if (r === 'cancelled') return;
+      await markBackedUp();
+      toast(r === 'shared' ? 'Backup gesichert' : 'Backup heruntergeladen');
+    });
   };
   const doImport = async () => {
     const f = await pickFile('application/json,.json');
@@ -59,10 +67,11 @@ export function SettingsScreen() {
 
         <div class="section-label">Backup</div>
         <div class="list">
-          <button class="row" onClick={doExport}><div class="grow"><div class="title">Backup als Datei sichern</div><div class="sub">{backupAge === null ? 'Noch nie gesichert' : backupAge === 0 ? 'Heute gesichert' : `Vor ${backupAge} Tagen gesichert`}</div></div><Icons.chev /></button>
+          <button class="row" onClick={doExport}><div class="grow"><div class="title">Backup sichern</div><div class="sub">{backupAge === null ? 'Noch nie gesichert' : backupAge === 0 ? 'Heute gesichert' : `Vor ${backupAge} Tagen gesichert`}</div></div><Icons.chev /></button>
           <button class="row" onClick={() => setSheet('import')}><div class="grow"><div class="title">Backup wiederherstellen</div><div class="sub">Ersetzt alle Daten in der App</div></div><Icons.chev /></button>
+          <div class="row"><div class="grow"><div class="title">Speicher geschützt</div><div class="sub">{persisted === true ? 'iOS behält die Daten dauerhaft' : persisted === false ? 'iOS entscheidet selbst, deshalb Backups machen' : 'Unbekannt, deshalb Backups machen'}</div></div><span style={`font-weight:700;color:${persisted ? 'var(--good)' : 'var(--muted)'}`}>{persisted === true ? 'Ja' : persisted === false ? 'Nein' : '–'}</span></div>
         </div>
-        <p style="color:var(--muted);font-size:13px;line-height:1.45;padding:0 6px">Alle Daten liegen nur auf diesem Handy. Lösche die App nicht, ohne vorher ein Backup zu machen. Die Datei landet unter „Dateien“ oder „Downloads“, von dort kannst du sie in iCloud ablegen.</p>
+        <p style="color:var(--muted);font-size:13px;line-height:1.45;padding:0 6px">Alle Daten liegen nur auf diesem Handy. Beim Sichern öffnet sich das Teilen-Menü: Tipp auf „In Dateien sichern“ und wähle iCloud Drive. Dann ist das Backup auch sicher, wenn das Handy verloren geht.</p>
 
         <div class="section-label">Gefahrenzone</div>
         <div class="list"><button class="row" onClick={() => setSheet('reset')}><div class="grow"><div class="title" style="color:var(--bad)">Alle Daten löschen</div></div></button></div>

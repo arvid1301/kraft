@@ -29,6 +29,7 @@ export const TARGETS: Partial<Record<MuscleId, Target>> = {
   glute_max: t(8, 16), glute_med: t(4, 10),
   rectus_femoris: t(8, 16), vastus_lateralis: t(8, 16), vastus_medialis: t(8, 16), adductors: t(4, 10),
   biceps_femoris: t(6, 12), semis: t(6, 12),
+  gastrocnemius: t(4, 10),
 };
 
 export type TargetStatus = 'none' | 'low' | 'ok' | 'high' | 'untracked';

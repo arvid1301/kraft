@@ -58,6 +58,35 @@ export function downloadText(filename: string, text: string) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+/**
+ * Datei über das iOS-Teilen-Menü weitergeben ("In Dateien sichern" → iCloud Drive).
+ * Muss direkt aus einem Tipp heraus aufgerufen werden, ohne vorheriges await.
+ * Fällt auf einen normalen Download zurück, wenn Teilen nicht geht.
+ */
+export async function shareFile(filename: string, text: string): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  try {
+    const file = new File([text], filename, { type: 'application/json' });
+    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+    if (typeof nav.share === 'function' && nav.canShare?.({ files: [file] })) {
+      await nav.share({ files: [file], title: 'Kraft Backup' });
+      return 'shared';
+    }
+  } catch (e) {
+    if ((e as Error)?.name === 'AbortError') return 'cancelled';
+  }
+  downloadText(filename, text);
+  return 'downloaded';
+}
+
+/** Ob iOS zugesagt hat, die Daten dauerhaft zu behalten. undefined = unbekannt. */
+export async function storagePersisted(): Promise<boolean | undefined> {
+  try {
+    if (!navigator.storage?.persisted) return undefined;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch { return undefined; }
+}
+
 export function pickFile(accept: string): Promise<File | null> {
   return new Promise((resolve) => {
     const i = document.createElement('input');

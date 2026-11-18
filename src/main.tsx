@@ -6,6 +6,9 @@ import './styles.css';
 
 registerSW({ immediate: true });
 
+// iOS bitten, die Daten nicht beim Aufräumen zu löschen. Schlägt still fehl, wenn es nicht geht.
+try { navigator.storage?.persist?.().catch(() => {}); } catch { /* ältere Browser */ }
+
 ensureSeeded().then(() => {
   render(<App />, document.getElementById('app')!);
 }).catch((e) => {
