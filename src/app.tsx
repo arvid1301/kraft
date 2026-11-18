@@ -7,6 +7,7 @@ import { Progress } from './ui/Progress';
 import { PlanScreen, DayEditor } from './ui/Plan';
 import { Library, ExerciseDetail } from './ui/Library';
 import { SettingsScreen } from './ui/Settings';
+import { MonthReviewScreen } from './ui/MonthReview';
 
 const TABS = [
   { path: '/heute', label: 'Heute', icon: Icons.today },
@@ -25,13 +26,14 @@ export function App() {
     case 'training': screen = <Workout />; showTabs = false; break;
     case 'verlauf': screen = arg ? <WorkoutDetail id={arg} /> : <History />; break;
     case 'fortschritt': screen = <Progress />; break;
+    case 'monat': screen = <MonthReviewScreen monthKey={arg} />; break;
     case 'plan': screen = arg ? <DayEditor dayId={arg} /> : <PlanScreen />; break;
     case 'bibliothek': screen = <Library />; break;
     case 'uebung': screen = <ExerciseDetail id={arg} />; break;
     case 'einstellungen': screen = <SettingsScreen />; break;
     default: screen = <Today />;
   }
-  const activeTab = root === 'bibliothek' || root === 'uebung' ? '/plan' : `/${root || 'heute'}`;
+  const activeTab = root === 'bibliothek' || root === 'uebung' ? '/plan' : root === 'monat' ? '/verlauf' : `/${root || 'heute'}`;
   return (
     <>
       {screen}

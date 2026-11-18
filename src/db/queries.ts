@@ -55,7 +55,7 @@ export async function activeWorkout(): Promise<Workout | undefined> {
   return db.workouts.where('status').equals('active').first();
 }
 
-export async function startWorkout(day: PlanDay, planId: string, opts: { entries?: PlanEntry[]; timeBudgetMin?: number; catchUp?: boolean } = {}): Promise<Workout> {
+export async function startWorkout(day: PlanDay, planId: string, opts: { entries?: PlanEntry[]; timeBudgetMin?: number; catchUp?: boolean; lightDay?: boolean; secondDay?: boolean } = {}): Promise<Workout> {
   const s = await getSettings();
   const exMap = await exerciseMap();
   const last = await lastLookup(s.currentGymId);
@@ -66,6 +66,7 @@ export async function startWorkout(day: PlanDay, planId: string, opts: { entries
   const w: Workout = {
     id: uid(), gymId: s.currentGymId, planId, dayId: day.id, dayName: day.name, startedAt: Date.now(), status: 'active',
     entries, bodyWeightKg: latestBw, timeBudgetMin: opts.timeBudgetMin, deload: deload || undefined, catchUp: opts.catchUp || undefined,
+    lightDay: opts.lightDay || undefined, secondDay: opts.secondDay || undefined,
   };
   await db.workouts.add(w);
   return w;

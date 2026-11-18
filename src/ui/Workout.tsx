@@ -292,6 +292,8 @@ export function Workout() {
               {ex && <div class="last">{last ? <>Letztes Mal <b>{lastText(ex, last.sets)}</b> <span>· {new Date(last.workout.startedAt).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span></> : 'Noch keine Werte an diesem Gym'}</div>}
               {w.deload ? (
                 <div class="chips"><span class="chip">Leichte Woche: weniger Sätze, 10 % leichter. Nicht ans Versagen gehen.</span></div>
+              ) : w.lightDay ? (
+                <div class="chips"><span class="chip">Morgen trainierst du wieder: heute nicht steigern, letzter Satz 2 bis 3 Wdh vor dem Versagen.</span></div>
               ) : (
                 <>
                   {suggestion && suggestion.action !== 'none' && (

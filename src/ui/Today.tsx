@@ -5,6 +5,8 @@ import { daysSince, weekStats } from '../logic/week';
 import { applyCatchUp, catchUp, thisWeek, workoutMuscleSets } from '../logic/volume';
 import { daySec, trimToBudget } from '../logic/timeMode';
 import { checkDeload } from '../logic/deload';
+import { secondDayAdjust, yesterdaysWorkouts } from '../logic/backToBack';
+import { monthKey, monthLabel, parseMonthKey, shiftMonth } from '../logic/month';
 import { MUSCLE_LABELS } from '../logic/muscles';
 import { go, useLive } from '../state';
 import { unlockAudio } from '../device';
@@ -32,6 +34,8 @@ export function Today() {
   const [pickDay, setPickDay] = useState(false);
   const [budget, setBudget] = useState<Budget>('full');
   const [useCatchUp, setUseCatchUp] = useState(true);
+  const [useB2B, setUseB2B] = useState(true);
+  const [lightDay, setLightDay] = useState(false);
   if (!data) return <div class="screen" />;
   const { settings, plan, workouts, exMap, active, gym } = data;
   const stats = weekStats(workouts.map((w) => w.startedAt), settings.weeklyGoal);
@@ -47,8 +51,14 @@ export function Today() {
 
   /** Einträge für einen Tag: plus Nachholübungen, gekürzt aufs Zeitbudget. */
   const hasCu = !!cu && (cu.add.length > 0 || cu.extra.length > 0);
+  // Gestern trainiert? Dann ist heute der zweite Tag in Folge.
+  const yesterday = yesterdaysWorkouts(workouts);
+  const b2bFor = (d: PlanDay) => secondDayAdjust(d.entries, yesterday, exMap);
+  const b2b = b2bFor(day);
+  const hasB2B = b2b.changes.length > 0;
   const plannedFor = (d: PlanDay, withCatchUp: boolean) => {
-    const base = withCatchUp && cu ? applyCatchUp(d.entries, cu) : d.entries;
+    const adjusted = useB2B ? b2bFor(d).entries : d.entries;
+    const base = withCatchUp && cu ? applyCatchUp(adjusted, cu) : adjusted;
     if (budget === 'full') return { entries: base, trim: null };
     const trim = trimToBudget(base, Number(budget), exMap);
     return { entries: trim.entries, trim };
@@ -61,7 +71,10 @@ export function Today() {
     if (active) { go('/training'); return; }
     const withCu = useCatchUp && hasCu && d.id === day.id;
     const p = plannedFor(d, withCu);
-    await startWorkout(d, plan.id, { entries: p.entries, timeBudgetMin: budget === 'full' ? undefined : Number(budget), catchUp: withCu });
+    await startWorkout(d, plan.id, {
+      entries: p.entries, timeBudgetMin: budget === 'full' ? undefined : Number(budget), catchUp: withCu,
+      lightDay, secondDay: useB2B && b2bFor(d).changes.length > 0,
+    });
     go('/training');
   };
 
@@ -71,6 +84,17 @@ export function Today() {
         <div><h1>Heute</h1><p class="sub">{new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' })}{gym ? ` · ${gym.name}` : ''}</p></div>
       </div>
       <div class="screen-body">
+        {(() => {
+          // In der ersten Woche eines Monats: Rückblick auf den Vormonat anbieten
+          const now = new Date();
+          if (now.getDate() > 7) return null;
+          const prev = shiftMonth(monthKey(now), -1);
+          const { year, month } = parseMonthKey(prev);
+          const had = workouts.some((w) => { const d = new Date(w.startedAt); return d.getFullYear() === year && d.getMonth() === month; });
+          return had ? (
+            <button class="banner" onClick={() => go(`/monat/${prev}`)}><Icons.progress /><span><b>Dein Rückblick für {monthLabel(prev).split(' ')[0]}</b> ist da.</span></button>
+          ) : null;
+        })()}
         {backupDue && (
           <button class="banner" onClick={() => go('/einstellungen')}><Icons.info /><span><b>Backup fällig.</b> Dein letztes Backup ist über 2 Wochen her.</span></button>
         )}
@@ -94,6 +118,13 @@ export function Today() {
                   {!preview.trim.fits && <span style="color:var(--warn)"> Kürzer geht es nicht ohne Grundübungen.</span>}
                 </p>
               )}
+              <div class="row" style="padding:0;min-height:48px">
+                <div class="grow">
+                  <div class="title" style="font-size:15px">Morgen trainiere ich wieder</div>
+                  <div class="sub" style="white-space:normal">{lightDay ? 'Heute nicht steigern, letzter Satz 2 bis 3 Wdh vor dem Versagen' : 'Dann wird heute etwas leichter'}</div>
+                </div>
+                <Switch on={lightDay} onChange={setLightDay} label="Morgen trainiere ich wieder" />
+              </div>
             </div>
           )}
           <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
@@ -101,6 +132,30 @@ export function Today() {
             {!active && <button class="btn ghost small" onClick={() => setPickDay(true)}>Anderen Tag wählen</button>}
           </div>
         </div>
+
+        {!active && hasB2B && (
+          <div class="card" style="display:flex;flex-direction:column;gap:10px">
+            <div class="row" style="padding:0;min-height:44px">
+              <div class="grow">
+                <h2 style="font-size:18px">Zweiter Tag in Folge</h2>
+                <div class="sub" style="white-space:normal">Gestern: {yesterday.map((w) => w.dayName).join(', ')}. Muskeln von gestern werden heute geschont.</div>
+              </div>
+              <Switch on={useB2B} onChange={setUseB2B} label="Anpassung für den zweiten Tag übernehmen" />
+            </div>
+            <div class="list" style="background:var(--card2)">
+              {b2b.changes.map((c) => (
+                <div class="row" style="min-height:44px">
+                  <div class="grow">
+                    <div class="title" style="font-size:14px;white-space:normal">
+                      {c.kind === 'swap' ? `${exMap.get(c.exerciseId)?.name} → ${exMap.get(c.toExerciseId!)?.name}` : `${exMap.get(c.exerciseId)?.name}: ${c.from} → ${c.to} Sätze`}
+                    </div>
+                    <div class="sub">{c.reason}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!active && cu && (
           <div class="card" style="display:flex;flex-direction:column;gap:10px">

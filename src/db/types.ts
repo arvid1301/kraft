@@ -112,6 +112,8 @@ export interface Workout {
   timeBudgetMin?: number;   // Zeitmodus
   deload?: boolean;         // leichte Woche
   catchUp?: boolean;        // mit Nachholvorschlag gestartet
+  lightDay?: boolean;       // morgen wird wieder trainiert: heute etwas leichter
+  secondDay?: boolean;      // zweiter Tag in Folge, angepasst
 }
 
 export interface WorkoutSummary {
