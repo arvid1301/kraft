@@ -7,7 +7,7 @@ import { suggest, type Suggestion } from '../logic/progression';
 import { RestTimer, fmtTime } from '../logic/timer';
 import { isEntryDone, nextOpenIndex, nextSupersetSet, pushToEnd, setSkipped, move } from '../logic/reorder';
 import { buildSingleEntry, refreshWarmup } from '../logic/workoutBuild';
-import { beep, keepAwake, unlockAudio } from '../device';
+import { alarm, keepAwake, tick, unlockAudio } from '../device';
 import { go, toast, useLive } from '../state';
 import { Confirm, Icons, Sheet, Stepper, fmtNum } from './components';
 import { Sortable } from './Sortable';
@@ -43,6 +43,8 @@ export function Workout() {
   const complaints = useLive(async () => complaintCounts(await db.workouts.where('status').equals('done').toArray()), []);
   const restDone = useRef(false);
   const cdDone = useRef(false);
+  const lastTick = useRef(0);
+  const lastCdTick = useRef(0);
 
   // Laden
   useEffect(() => {
@@ -59,16 +61,29 @@ export function Workout() {
   useEffect(() => {
     const id = setInterval(() => {
       if (rest.active || countdown.active) setTick((t) => t + 1);
+      // Countdown-Töne bei 3, 2, 1 Sekunden
+      if (rest.running && settings?.sound !== false) {
+        const r = rest.remaining;
+        if (r > 3) lastTick.current = 0;
+        else if (r >= 1 && lastTick.current !== r) { lastTick.current = r; tick(); }
+      }
+      if (countdown.running && settings?.sound !== false) {
+        const r = countdown.remaining;
+        if (r > 3) lastCdTick.current = 0;
+        else if (r >= 1 && lastCdTick.current !== r) { lastCdTick.current = r; tick(); }
+      }
       if (rest.finished && !restDone.current) {
         restDone.current = true;
-        if (settings?.sound !== false) beep(3);
+        lastTick.current = 0;
+        if (settings?.sound !== false) alarm();
         setFlash(true); setTimeout(() => setFlash(false), 1700);
         toast('Pause vorbei, nächster Satz');
         rest.stop();
       }
       if (countdown.finished && !cdDone.current) {
         cdDone.current = true;
-        if (settings?.sound !== false) beep(2, 660);
+        lastCdTick.current = 0;
+        if (settings?.sound !== false) tick(true);
         countdown.stop();
         const sid = countdownSetRef.current;
         if (sid) { toggleSet(sid, true); setCountdownSet(null); }
@@ -128,7 +143,8 @@ export function Workout() {
         return n;
       });
       let next = { ...e, sets };
-      if (ownerEx) next = refreshWarmup(next, ownerEx);
+      // Aufwärmsätze nur neu berechnen, wenn sich das Arbeitsgewicht ändert, nicht bei eigener Eingabe im Aufwärmsatz
+      if (ownerEx && !before.warmup && before.weight !== after.weight) next = refreshWarmup(next, ownerEx);
       return next;
     });
   };

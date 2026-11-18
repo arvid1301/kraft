@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { db, uid } from '../db/db';
 import { buildBackup, importBackup, markBackedUp, patchSettings, wipeAll } from '../db/queries';
-import { pickFile, shareFile, storagePersisted } from '../device';
+import { alarm, pickFile, shareFile, storagePersisted, unlockAudio } from '../device';
 import { toast, useLive } from '../state';
 import { Confirm, Field, Icons, Sheet, Stepper, Switch, TextInput, fmtNum } from './components';
 
@@ -61,7 +61,10 @@ export function SettingsScreen() {
 
         <div class="section-label">Training</div>
         <div class="list">
-          <div class="row"><div class="grow"><div class="title">Ton am Ende der Pause</div><div class="sub">Mischt sich mit laufender Musik</div></div><Switch on={settings.sound} onChange={(v) => patchSettings({ sound: v })} label="Ton" /></div>
+          <div class="row"><div class="grow"><div class="title">Ton am Ende der Pause</div><div class="sub">Countdown 3, 2, 1 und Schlusston, mischt sich mit Musik</div></div><Switch on={settings.sound} onChange={(v) => patchSettings({ sound: v })} label="Ton" /></div>
+          <button class="row" onClick={() => { unlockAudio(); setTimeout(() => alarm(), 60); toast('Nichts gehört? Lautlos-Schalter am iPhone ausschalten und Lautstärke erhöhen.'); }}>
+            <div class="grow"><div class="title">Ton testen</div><div class="sub">Spielt den Schlusston der Pause</div></div><Icons.play />
+          </button>
           <div class="row"><div class="grow"><div class="title">Bildschirm anlassen</div><div class="sub">Während des Trainings</div></div><Switch on={settings.keepAwake} onChange={(v) => patchSettings({ keepAwake: v })} label="Bildschirm anlassen" /></div>
         </div>
 

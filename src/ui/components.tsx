@@ -67,7 +67,7 @@ export function Confirm(props: { title: string; text?: string; okLabel: string; 
 }
 
 export function Stepper(props: { label: string; value: number; unit?: string; step: number; min?: number; max?: number; onChange: (v: number) => void; format?: (v: number) => string; compact?: boolean }) {
-  const [typing, setTyping] = useState(false);
+  const [pad, setPad] = useState(false);
   const set = (v: number) => {
     let r = Math.round(v * 100) / 100;
     if (Number.isNaN(r)) return;
@@ -75,21 +75,60 @@ export function Stepper(props: { label: string; value: number; unit?: string; st
     if (props.max !== undefined && r > props.max) r = props.max;
     props.onChange(r);
   };
-  const commit = (el: HTMLInputElement) => { const v = parseFloat(el.value.replace(',', '.')); if (!Number.isNaN(v)) set(v); setTyping(false); };
+  const shown = props.format ? props.format(props.value) : fmtNum(props.value);
   return (
     <div class={`stepper ${props.compact ? 'compact' : ''}`}>
-      <div class="lbl">{props.label}</div>
-      <button type="button" aria-label={`${props.label} minus`} onClick={() => set(props.value - props.step)}><Icons.minus /></button>
-      {typing ? (
-        <input class="val num" type="text" inputMode="decimal" style="background:var(--card);border:0;border-radius:10px;width:100%;min-width:0;color:inherit;font:inherit;padding:2px 0;text-align:center" defaultValue={String(props.value).replace('.', ',')} autofocus
-          onFocus={(e) => (e.target as HTMLInputElement).select()}
-          onBlur={(e) => commit(e.target as HTMLInputElement)}
-          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
-      ) : (
-        <button type="button" class="val num" aria-label={`${props.label} eintippen`} onClick={() => setTyping(true)}>{props.format ? props.format(props.value) : fmtNum(props.value)}{props.unit && <small> {props.unit}</small>}</button>
+      {/* Große Fläche: antippen öffnet das Zahlenfeld */}
+      <button type="button" class="val-btn" aria-label={`${props.label}: ${shown}${props.unit ? ' ' + props.unit : ''}. Antippen zum Eintippen`} onClick={() => setPad(true)}>
+        <span class="lbl">{props.label}</span>
+        <span class="val num">{shown}{props.unit && <small> {props.unit}</small>}</span>
+      </button>
+      <div class="pm">
+        <button type="button" aria-label={`${props.label} minus`} onClick={() => set(props.value - props.step)}><Icons.minus /></button>
+        <button type="button" aria-label={`${props.label} plus`} onClick={() => set(props.value + props.step)}><Icons.plus /></button>
+      </div>
+      {pad && (
+        <Keypad
+          title={props.label} unit={props.unit} value={props.value}
+          decimals={props.step % 1 !== 0} negative={props.min !== undefined && props.min < 0}
+          onDone={(v) => { set(v); setPad(false); }} onClose={() => setPad(false)}
+        />
       )}
-      <button type="button" aria-label={`${props.label} plus`} onClick={() => set(props.value + props.step)}><Icons.plus /></button>
     </div>
+  );
+}
+
+/** Eigene Zahlentastatur mit großen Tasten, für die Bedienung mit einer Hand. */
+export function Keypad(props: { title: string; unit?: string; value: number; decimals: boolean; negative: boolean; onDone: (v: number) => void; onClose: () => void }) {
+  const [text, setText] = useState('');
+  const press = (k: string) => {
+    if (k === '⌫') { setText(text.slice(0, -1)); return; }
+    if (k === '±') { setText(text.startsWith('-') ? text.slice(1) : '-' + (text || String(props.value).replace('.', ',').replace(/^-/, ''))); return; }
+    if (k === ',') { if (!props.decimals || text.includes(',')) return; setText((text || '0') + ','); return; }
+    if (text.replace('-', '').length >= 6) return;
+    const dec = text.split(',')[1];
+    if (dec !== undefined && dec.length >= 2) return;
+    setText(text === '0' ? k : text + k);
+  };
+  const parsed = text === '' || text === '-' ? NaN : parseFloat(text.replace(',', '.'));
+  const done = () => { if (!Number.isNaN(parsed)) props.onDone(parsed); else props.onClose(); };
+  const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', props.decimals ? ',' : props.negative ? '±' : '', '0', '⌫'];
+  return (
+    <Sheet title={props.title} onClose={props.onClose}>
+      <div class="pad-display num" aria-live="polite">
+        <span style={text ? '' : 'color:var(--muted)'}>{text || fmtNum(props.value)}</span>
+        {props.unit && <small> {props.unit}</small>}
+      </div>
+      <div class="pad-grid">
+        {keys.map((k) => k
+          ? <button type="button" class="pad-key" aria-label={k === '⌫' ? 'Löschen' : k === '±' ? 'Vorzeichen' : k} onClick={() => press(k)}>{k}</button>
+          : <span />)}
+      </div>
+      <div style="display:flex;gap:8px">
+        {props.negative && props.decimals && <button type="button" class="pad-key" style="flex:none;width:72px" aria-label="Vorzeichen" onClick={() => press('±')}>±</button>}
+        <button type="button" class="btn primary" style="flex:1;min-height:60px" onClick={done}>Übernehmen</button>
+      </div>
+    </Sheet>
   );
 }
 
